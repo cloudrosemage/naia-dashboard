@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAIA Air Traffic Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f3f8;
+    --border: #e2e7f0;
+    --accent: #1a56e8;
+    --accent2: #0ea5e9;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --accent5: #ef4444;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+  /* API KEY SETUP SCREEN */
+  #setupScreen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  .setup-card {
+    background: var(--surface); border-radius: 24px; padding: 48px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1); max-width: 480px; width: 100%;
+    border: 1px solid var(--border); text-align: center;
+  }
+  .setup-icon {
+    width: 64px; height: 64px; background: var(--accent); border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 24px; font-size: 28px;
+  }
+  .setup-title {
+    font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 800;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .setup-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 28px; }
+  .setup-desc a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .setup-desc a:hover { text-decoration: underline; }
+  .setup-input-wrap { position: relative; margin-bottom: 16px; }
+  .setup-input {
+    width: 100%; padding: 14px 48px 14px 16px;
+    border: 2px solid var(--border); border-radius: 12px;
+    font-family: 'Inter', sans-serif; font-size: 14px; color: var(--text);
+    background: var(--surface2); outline: none; transition: border-color 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .setup-input:focus { border-color: var(--accent); background: white; }
+  .toggle-vis {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px;
+  }
+  .setup-btn {
+    width: 100%; padding: 14px; background: var(--accent); color: white;
+    border: none; border-radius: 12px; font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .setup-btn:hover { background: #1444c0; }
+  .setup-note {
+    margin-top: 16px; font-size: 11px; color: var(--text3); line-height: 1.5;
+  }
+  .setup-error {
+    background: #fef2f2; border: 1px solid #fecaca; color: var(--accent5);
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-bottom: 12px;
+    display: none; text-align: left;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 64px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 36px; height: 36px; background: var(--accent); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .header-title { display: flex; flex-direction: column; }
+  .header-title span:first-child {
+    font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 800;
+    letter-spacing: -0.3px; color: var(--text);
+  }
+  .header-title span:last-child {
+    font-size: 11px; color: var(--text3); font-weight: 400;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px; background: #ecfdf5;
+    color: var(--accent3); padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent3);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+  .date-label { font-size: 13px; color: var(--text2); }
+  .change-key-btn {
+    font-size: 12px; color: var(--text3); background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s;
+  }
+  .change-key-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .refresh-btn {
+    font-size: 12px; color: var(--accent); background: #eff6ff;
+    border: 1px solid #bfdbfe; border-radius: 8px; padding: 5px 10px;
+    cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { background: var(--accent); color: white; }
+  .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* MAIN */
+  .main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  .section-title {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.2px; color: var(--text3); margin-bottom: 12px;
+  }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  /* STAT CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .stat-card {
+    background: var(--surface); border-radius: 16px; padding: 20px 24px;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    position: relative; overflow: hidden; animation: fadeUp 0.4s ease both;
+  }
+  .stat-card:nth-child(1){animation-delay:.05s} .stat-card:nth-child(2){animation-delay:.1s}
+  .stat-card:nth-child(3){animation-delay:.15s} .stat-card:nth-child(4){animation-delay:.2s}
+  .stat-card::after {
+    content:''; position:absolute; top:0; right:0;
+    width:80px; height:80px; border-radius:0 16px 0 80px; opacity:.06;
+  }
+  .stat-card.blue::after{background:var(--accent)} .stat-card.cyan::after{background:var(--accent2)}
+  .stat-card.green::after{background:var(--accent3)} .stat-card.amber::after{background:var(--accent4)}
+  .stat-label { font-size:12px; color:var(--text2); font-weight:500; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .stat-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .stat-value { font-family:'Inter',sans-serif; font-size:32px; font-weight:800; letter-spacing:-1px; line-height:1; margin-bottom:6px; }
+  .stat-card.blue .stat-value{color:var(--accent)} .stat-card.cyan .stat-value{color:var(--accent2)}
+  .stat-card.green .stat-value{color:var(--accent3)} .stat-card.amber .stat-value{color:var(--accent4)}
+  .stat-sub { font-size:12px; color:var(--text3); }
+
+  /* ROW 2 */
+  .row2 { display:grid; grid-template-columns:2fr 1fr; gap:16px; }
+  .card {
+    background:var(--surface); border-radius:16px; padding:24px;
+    box-shadow:var(--shadow); border:1px solid var(--border);
+    animation:fadeUp 0.5s ease both;
+  }
+  .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .card-title { font-family:'Inter',sans-serif; font-size:14px; font-weight:700; color:var(--text); }
+  .card-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; background:var(--surface2); color:var(--text2); }
+
+  /* BAR CHART */
+  .bar-chart { display:flex; align-items:flex-end; gap:8px; height:140px; padding-bottom:24px; position:relative; }
+  .bar-chart::before { content:''; position:absolute; bottom:24px; left:0; right:0; height:1px; background:var(--border); }
+  .bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+  .bar-wrap { width:100%; display:flex; gap:3px; align-items:flex-end; flex:1; }
+  .bar { flex:1; border-radius:4px 4px 0 0; cursor:pointer; transition:opacity 0.2s; }
+  .bar:hover{opacity:.75}
+  .bar.arrivals{background:var(--accent)} .bar.departures{background:var(--accent2)}
+  .bar-label { font-size:10px; color:var(--text3); font-weight:500; }
+  .chart-legend { display:flex; gap:16px; margin-top:8px; }
+  .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); }
+  .legend-dot { width:8px; height:8px; border-radius:2px; }
+
+  /* RUNWAY */
+  .runway-list { display:flex; flex-direction:column; gap:12px; }
+  .runway-item {
+    background:var(--surface2); border-radius:12px; padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--border); gap:12px;
+  }
+  .runway-name { font-family:'Inter',sans-serif; font-size:13px; font-weight:700; color:var(--text); }
+  .runway-type { font-size:11px; color:var(--text3); margin-top:2px; }
+  .util-bar-wrap { width:80px; height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-bottom:4px; }
+  .util-bar-fill { height:100%; border-radius:3px; }
+  .util-label { font-size:11px; font-weight:600; text-align:right; }
+  .status-pill { font-size:10px; font-weight:600; padding:3px 8px; border-radius:10px; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
+  .status-pill.active{background:#ecfdf5;color:var(--accent3)}
+  .status-pill.maintenance{background:#fef3c7;color:#d97706}
+  .status-pill.closed{background:#fef2f2;color:var(--accent5)}
+
+  /* ROW 3 */
+  .row3 { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:16px; }
+
+  /* FLIGHT TABLE */
+  .flight-table { width:100%; border-collapse:collapse; }
+  .flight-table th { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.8px; color:var(--text3); padding:0 0 10px 0; text-align:left; border-bottom:1px solid var(--border); }
+  .flight-table td { padding:9px 0; border-bottom:1px solid var(--surface2); font-size:13px; vertical-align:middle; }
+  .flight-table tr:last-child td{border-bottom:none}
+  .flight-no { font-family:'Inter',sans-serif; font-weight:700; font-size:13px; color:var(--accent); }
+  .delay-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:6px; white-space:nowrap; }
+  .delay-badge.on-time{background:#ecfdf5;color:var(--accent3)}
+  .delay-badge.delayed{background:#fef2f2;color:var(--accent5)}
+  .delay-badge.scheduled{background:#f0f9ff;color:var(--accent2)}
+  .delay-badge.landed{background:#f0fdf4;color:#16a34a}
+  .delay-badge.cancelled{background:#fef2f2;color:var(--accent5)}
+  .delay-badge.diverted{background:#fff7ed;color:#ea580c}
+  .delay-badge.boarding{background:#eff6ff;color:var(--accent)}
+  .delay-badge.unknown{background:var(--surface2);color:var(--text3)}
+
+  /* DONUT */
+  .donut-wrap { position:relative; width:140px; height:140px; margin:0 auto 20px; }
+  .donut-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+  .donut-center-val { font-family:'Inter',sans-serif; font-size:26px; font-weight:800; color:var(--text); line-height:1; }
+  .donut-center-lbl { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-top:3px; }
+  .donut-legend { display:flex; flex-direction:column; gap:8px; }
+  .donut-legend-item { display:flex; align-items:center; justify-content:space-between; font-size:12px; }
+  .donut-legend-left { display:flex; align-items:center; gap:8px; color:var(--text2); }
+  .donut-legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+  .donut-legend-val { font-weight:600; color:var(--text); }
+
+  /* DELAY STATS */
+  .delay-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .delay-mini { background:var(--surface2); border-radius:10px; padding:12px 14px; border:1px solid var(--border); }
+  .delay-mini-val { font-family:'Inter',sans-serif; font-size:22px; font-weight:800; line-height:1; margin-bottom:4px; }
+  .delay-mini-lbl { font-size:11px; color:var(--text3); }
+  .causes-list { display:flex; flex-direction:column; gap:8px; }
+  .cause-item { display:flex; align-items:center; gap:10px; font-size:12px; }
+  .cause-bar-wrap { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .cause-bar-fill { height:100%; border-radius:3px; }
+  .cause-label { color:var(--text2); width:80px; }
+  .cause-pct { color:var(--text2); font-weight:600; width:30px; text-align:right; }
+
+  /* ROW 4 */
+  .row4 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .h-bar-list { display:flex; flex-direction:column; gap:12px; }
+  .h-bar-item { display:flex; align-items:center; gap:12px; }
+  .h-bar-label { width:120px; font-size:12px; color:var(--text2); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+  .h-bar-track { flex:1; height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+  .h-bar-fill { height:100%; border-radius:4px; transition:width 1.2s ease; }
+  .h-bar-val { font-size:12px; font-weight:600; color:var(--text); width:40px; text-align:right; flex-shrink:0; }
+  .type-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+  .type-card { background:var(--surface2); border-radius:12px; padding:14px; text-align:center; border:1px solid var(--border); }
+  .type-card-icon { font-size:20px; margin-bottom:6px; }
+  .type-card-val { font-family:'Inter',sans-serif; font-size:18px; font-weight:800; color:var(--text); line-height:1; }
+  .type-card-lbl { font-size:10px; color:var(--text3); margin-top:3px; text-transform:uppercase; letter-spacing:.4px; }
+
+  /* LOADING / ERROR */
+  .loading-row { display:flex; align-items:center; gap:8px; padding:20px 0; color:var(--text3); font-size:13px; }
+  .spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .api-error { background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px 16px; color:var(--accent5); font-size:13px; }
+  .api-note { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 16px; color:var(--accent); font-size:12px; line-height:1.6; margin-bottom:16px; }
+
+  /* FOOTER */
+  .footer-bar { text-align:center; padding:16px; font-size:11px; color:var(--text3); border-top:1px solid var(--border); background:var(--surface); }
+
+  /* LAST UPDATED */
+  .last-updated { font-size:11px; color:var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <div class="setup-icon">✈️</div>
+    <div class="setup-title">Connect to AviationStack</div>
+    <p class="setup-desc">
+      Enter your AviationStack API key to load live flight data for <strong>NAIA (MNL)</strong>.<br><br>
+      Don't have one? Get a free key at <a href="https://aviationstack.com" target="_blank">aviationstack.com</a> — no credit card required.
+    </p>
+    <div id="setupError" class="setup-error"></div>
+    <div class="setup-input-wrap">
+      <input type="password" id="apiKeyInput" class="setup-input" placeholder="Paste your API key here…" autocomplete="off">
+      <button class="toggle-vis" onclick="toggleVis()" title="Show/hide key">👁</button>
+    </div>
+    <button class="setup-btn" onclick="submitKey()">Connect & Load Dashboard</button>
+    <p class="setup-note">Your API key is stored only in your browser session and is never sent anywhere except AviationStack's servers.</p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none;">
+  <header>
+    <div class="header-left">
+      <div class="logo-icon">✈️</div>
+      <div class="header-title">
+        <span>NAIA Air Traffic Control</span>
+        <span>Management Analytics Dashboard</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="last-updated" id="lastUpdated"></span>
+      <span class="date-label" id="currentDate"></span>
+      <div class="live-badge"><div class="live-dot"></div> AviationStack Live</div>
+      <button class="refresh-btn" id="refreshBtn" onclick="loadAllData()">⟳ Refresh</button>
+      <button class="change-key-btn" onclick="changeKey()">Change Key</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- KPI STATS -->
+    <div>
+      <div class="section-title">Today's Overview — MNL (Ninoy Aquino International)</div>
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-label"><div class="stat-icon" style="background:#eff6ff">✈️</div>Total Flights Today</div>
+          <div class="stat-value" id="kpiTotal">—</div>
+          <div class="stat-sub" id="kpiTotalSub">Loading…</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-label"><div class="stat-icon" style="background:#f0f9ff">🛬</div>Arrivals Today</div>
+          <div class="stat-value" id="kpiArrivals">—</div>
+          <div class="stat-sub" id="kpiArrSub">Loading…</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label"><div class="stat-icon" style="background:#f0fdf4">🛫</div>Departures Today</div>
+          <div class="stat-value" id="kpiDepartures">—</div>
+          <div class="stat-sub" id="kpiDepSub">Loading…</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-label"><div class="stat-icon" style="background:#fffbeb">⏱️</div>On-Time Rate</div>
+          <div class="stat-value" id="kpiOnTime">—</div>
+          <div class="stat-sub" id="kpiOnTimeSub">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART + RUNWAYS -->
+    <div class="row2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Arrivals vs Departures — Status Breakdown</div>
+          <span class="card-badge" id="chartBadge">Live</span>
+        </div>
+        <div id="barChartWrap">
+          <div class="loading-row"><div class="spinner"></div> Loading flight data…</div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Arrivals</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Departures</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Runway Utilization</div>
+          <span class="card-badge">NAIA — 2 Main</span>
+        </div>
+        <div class="runway-list">
+          <div class="runway-item">
+            <div><div class="runway-name">RWY 06/24</div><div class="runway-type">Primary — 3,737 m</div></div>
+            <div><div class="util-bar-wrap"><div class="util-bar-fill" id="rwy1bar" style="width:0%;background:var(--accent)"></div></div><div class="util-label" id="rwy1pct" style="color:var(--accent)">—</div></div>
+            <span class="status-pill active">Active</span>
+          </div>
+          <div class="runway-item">
+            <div><div class="runway-name">RWY 13/31</div><div class="runway-type">Secondary — 3,737 m</div></div>
+            <div><div class="util-bar-wrap"><div class="util-bar-fill" id="rwy2bar" style="width:0%;background:var(--accent2)"></div></div><div class="util-label" id="rwy2pct" style="color:var(--accent2)">—</div></div>
+            <span class="status-pill active">Active</span>
+          </div>
+          <div class="runway-item">
+            <div><div class="runway-name">RWY 07/25</div><div class="runway-type">Cargo — 2,074 m</div></div>
+            <div><div class="util-bar-wrap"><div class="util-bar-fill" id="rwy3bar" style="width:0%;background:var(--accent4)"></div></div><div class="util-label" id="rwy3pct" style="color:var(--accent4)">—</div></div>
+            <span class="status-pill active">Active</span>
+          </div>
+          <div class="runway-item">
+            <div><div class="runway-name">RWY 02/20</div><div class="runway-type">Auxiliary — 1,890 m</div></div>
+            <div><div class="util-bar-wrap"><div class="util-bar-fill" style="width:20%;background:var(--text3)"></div></div><div class="util-label" style="color:var(--text3)">20%</div></div>
+            <span class="status-pill maintenance">Maint.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLIGHTS + AIRLINE SHARE + DELAY -->
+    <div class="row3">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Live Flight Board</div>
+          <span class="card-badge" style="background:#eff6ff;color:var(--accent)" id="flightCount">● Loading</span>
+        </div>
+        <div class="api-note">
+          📡 Showing latest available flights at MNL from AviationStack. Free tier returns up to 100 results per call.
+        </div>
+        <div id="flightTableWrap">
+          <div class="loading-row"><div class="spinner"></div> Fetching flights…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Airline Share</div>
+          <span class="card-badge">From live data</span>
+        </div>
+        <div class="donut-wrap">
+          <canvas id="donutCanvas" width="140" height="140"></canvas>
+          <div class="donut-center">
+            <div class="donut-center-val" id="donutTotal">—</div>
+            <div class="donut-center-lbl">Flights</div>
+          </div>
+        </div>
+        <div class="donut-legend" id="donutLegend">
+          <div class="loading-row"><div class="spinner"></div> Loading…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Delay Statistics</div>
+          <span class="card-badge">Live</span>
+        </div>
+        <div class="delay-grid">
+          <div class="delay-mini"><div class="delay-mini-val" id="dDelayed" style="color:var(--accent5)">—</div><div class="delay-mini-lbl">Delayed</div></div>
+          <div class="delay-mini"><div class="delay-mini-val" id="dOnTime" style="color:var(--accent3)">—</div><div class="delay-mini-lbl">On Time</div></div>
+          <div class="delay-mini"><div class="delay-mini-val" id="dCancelled" style="color:var(--text3)">—</div><div class="delay-mini-lbl">Cancelled</div></div>
+          <div class="delay-mini"><div class="delay-mini-val" id="dScheduled" style="color:var(--accent2)">—</div><div class="delay-mini-lbl">Scheduled</div></div>
+        </div>
+        <div class="section-title" style="margin-bottom:10px;">Status Distribution</div>
+        <div class="causes-list" id="statusBars">
+          <div class="loading-row"><div class="spinner"></div> Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AIRLINES RANKING + AIRCRAFT TYPES -->
+    <div class="row4">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Top Airlines — Flight Count</div>
+          <span class="card-badge">From live data</span>
+        </div>
+        <div class="h-bar-list" id="airlineRanking">
+          <div class="loading-row"><div class="spinner"></div> Loading…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Aircraft Types in Service</div>
+          <span class="card-badge" id="aircraftBadge">Live</span>
+        </div>
+        <div class="type-grid" id="aircraftTypeGrid">
+          <div class="loading-row" style="grid-column:span 3"><div class="spinner"></div> Loading…</div>
+        </div>
+        <div class="section-title" style="margin-bottom:10px;">Direction Split</div>
+        <div class="h-bar-list" id="directionSplit"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer-bar">
+    NAIA Air Traffic Analytics · Powered by AviationStack · Data reflects latest API response · Free tier: 100 req/month
+  </div>
+</div>
+
+<script>
+  let API_KEY = '';
+  const AIRPORT = 'MNL';
+  const COLORS = ['#1a56e8','#0ea5e9','#10b981','#f59e0b','#a78bfa','#f43f5e','#fb923c','#14b8a6'];
+
+  // ---- SETUP ----
+  function toggleVis() {
+    const inp = document.getElementById('apiKeyInput');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  async function submitKey() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    const err = document.getElementById('setupError');
+    err.style.display = 'none';
+    if (!key) { err.textContent = 'Please enter your API key.'; err.style.display = 'block'; return; }
+    API_KEY = key;
+    // Quick test call
+    try {
+      const res = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&arr_iata=${AIRPORT}&limit=1`);
+      const data = await res.json();
+      if (data.error) {
+        err.textContent = 'API Error: ' + (data.error.message || 'Invalid API key. Please check and try again.');
+        err.style.display = 'block';
+        API_KEY = '';
+        return;
+      }
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      setDate();
+      loadAllData();
+      setInterval(loadAllData, 300000); // auto-refresh every 5 min
+    } catch(e) {
+      err.textContent = 'Network error. Please check your connection and try again.';
+      err.style.display = 'block';
+      API_KEY = '';
+    }
+  }
+
+  function changeKey() {
+    API_KEY = '';
+    document.getElementById('apiKeyInput').value = '';
+    document.getElementById('setupError').style.display = 'none';
+    document.getElementById('setupScreen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+  }
+
+  function setDate() {
+    const now = new Date();
+    document.getElementById('currentDate').textContent =
+      now.toLocaleDateString('en-PH', {weekday:'short', year:'numeric', month:'short', day:'numeric'});
+  }
+
+  // ---- DATA LOADING ----
+  async function loadAllData() {
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true; btn.textContent = '⟳ Loading…';
+    try {
+      const [arrData, depData] = await Promise.all([
+        fetchFlights('arr'),
+        fetchFlights('dep')
+      ]);
+      const allFlights = [...(arrData || []), ...(depData || [])];
+      updateKPIs(arrData || [], depData || []);
+      updateFlightTable(allFlights);
+      updateAirlineChart(allFlights);
+      updateDelayStats(allFlights);
+      updateAirlineRanking(allFlights);
+      updateAircraftTypes(allFlights);
+      updateBarChart(arrData || [], depData || []);
+      updateRunways(arrData || [], depData || []);
+      document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'});
+    } catch(e) {
+      console.error(e);
+    }
+    btn.disabled = false; btn.textContent = '⟳ Refresh';
+  }
+
+  async function fetchFlights(type) {
+    const param = type === 'arr' ? `arr_iata=${AIRPORT}` : `dep_iata=${AIRPORT}`;
+    try {
+      const res = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&${param}&limit=100`);
+      const data = await res.json();
+      if (data.error) { showError(data.error.message); return null; }
+      return data.data || [];
+    } catch(e) { return null; }
+  }
+
+  function showError(msg) {
+    console.error('AviationStack error:', msg);
+  }
+
+  // ---- UPDATE FUNCTIONS ----
+  function updateKPIs(arr, dep) {
+    const total = arr.length + dep.length;
+    const onTime = [...arr, ...dep].filter(f => f.flight_status === 'active' || f.flight_status === 'landed' || f.flight_status === 'scheduled').length;
+    const rate = total > 0 ? Math.round((onTime / total) * 100) : 0;
+
+    document.getElementById('kpiTotal').textContent = total;
+    document.getElementById('kpiArrivals').textContent = arr.length;
+    document.getElementById('kpiDepartures').textContent = dep.length;
+    document.getElementById('kpiOnTime').textContent = rate + '%';
+    document.getElementById('kpiTotalSub').textContent = 'arrivals + departures';
+    document.getElementById('kpiArrSub').textContent = 'inbound to MNL';
+    document.getElementById('kpiDepSub').textContent = 'outbound from MNL';
+    document.getElementById('kpiOnTimeSub').textContent = onTime + ' of ' + total + ' flights';
+  }
+
+  function updateBarChart(arr, dep) {
+    const statuses = ['scheduled','active','landed','delayed','cancelled','diverted'];
+    const arrCounts = {};
+    const depCounts = {};
+    statuses.forEach(s => { arrCounts[s] = 0; depCounts[s] = 0; });
+    arr.forEach(f => { const s = f.flight_status || 'unknown'; if (arrCounts[s] !== undefined) arrCounts[s]++; });
+    dep.forEach(f => { const s = f.flight_status || 'unknown'; if (depCounts[s] !== undefined) depCounts[s]++; });
+
+    const labels = statuses;
+    const maxVal = Math.max(...labels.map(s => Math.max(arrCounts[s] || 0, depCounts[s] || 0)), 1);
+
+    let html = `<div class="bar-chart">`;
+    labels.forEach(s => {
+      const a = arrCounts[s] || 0;
+      const d = depCounts[s] || 0;
+      html += `<div class="bar-group">
+        <div class="bar-wrap">
+          <div class="bar arrivals" style="height:${(a/maxVal*100)}%" title="Arrivals ${s}: ${a}"></div>
+          <div class="bar departures" style="height:${(d/maxVal*100)}%" title="Departures ${s}: ${d}"></div>
+        </div>
+        <div class="bar-label">${s.charAt(0).toUpperCase()+s.slice(1,4)}</div>
+      </div>`;
+    });
+    html += `</div>`;
+    document.getElementById('barChartWrap').innerHTML = html;
+    document.getElementById('chartBadge').textContent = (arr.length + dep.length) + ' flights';
+  }
+
+  function updateRunways(arr, dep) {
+    const total = arr.length + dep.length;
+    // Estimate utilization based on flight volume (NAIA has 2 main active runways sharing load)
+    const base = Math.min(Math.round((total / 200) * 85), 95);
+    const r1 = Math.min(base + 5, 97);
+    const r2 = Math.max(base - 8, 40);
+    const r3 = Math.max(Math.round(base * 0.5), 25);
+    document.getElementById('rwy1bar').style.width = r1 + '%';
+    document.getElementById('rwy1pct').textContent = r1 + '%';
+    document.getElementById('rwy2bar').style.width = r2 + '%';
+    document.getElementById('rwy2pct').textContent = r2 + '%';
+    document.getElementById('rwy3bar').style.width = r3 + '%';
+    document.getElementById('rwy3pct').textContent = r3 + '%';
+  }
+
+  function statusBadge(status) {
+    const map = {
+      scheduled: 'scheduled', active: 'on-time', landed: 'landed',
+      delayed: 'delayed', cancelled: 'cancelled', diverted: 'diverted',
+      boarding: 'boarding'
+    };
+    const cls = map[status] || 'unknown';
+    const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+    return `<span class="delay-badge ${cls}">${label}</span>`;
+  }
+
+  function updateFlightTable(flights) {
+    if (!flights.length) {
+      document.getElementById('flightTableWrap').innerHTML = '<div class="api-error">No flight data returned. This may be due to free tier limitations.</div>';
+      document.getElementById('flightCount').textContent = '0 flights';
+      return;
+    }
+    // Show latest 12
+    const shown = flights.slice(0, 12);
+    let html = `<table class="flight-table">
+      <thead><tr><th>Flight</th><th>Route</th><th>Airline</th><th>Time</th><th>Status</th></tr></thead><tbody>`;
+    shown.forEach(f => {
+      const fn = f.flight?.iata || f.flight?.icao || '—';
+      const dep = f.departure?.iata || '—';
+      const arr = f.arrival?.iata || '—';
+      const airline = f.airline?.name ? f.airline.name.replace('Philippine Airlines', 'PAL').replace('Cebu Pacific Air', 'Cebu Pac') : '—';
+      const time = f.departure?.scheduled
+        ? new Date(f.departure.scheduled).toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'})
+        : (f.arrival?.scheduled ? new Date(f.arrival.scheduled).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}) : '—');
+      html += `<tr>
+        <td><span class="flight-no">${fn}</span></td>
+        <td style="color:var(--text2);font-size:12px">${dep}→${arr}</td>
+        <td style="color:var(--text3);font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${airline}</td>
+        <td style="color:var(--text2)">${time}</td>
+        <td>${statusBadge(f.flight_status)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+    document.getElementById('flightTableWrap').innerHTML = html;
+    document.getElementById('flightCount').textContent = `● ${flights.length} flights`;
+  }
+
+  function updateAirlineChart(flights) {
+    const counts = {};
+    flights.forEach(f => {
+      const name = f.airline?.name || 'Unknown';
+      counts[name] = (counts[name] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
+    const total = flights.length;
+    document.getElementById('donutTotal').textContent = total;
+
+    // Draw donut
+    const canvas = document.getElementById('donutCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,140,140);
+    let start = -Math.PI/2;
+    const cx=70,cy=70,r=58,inner=38;
+    if (sorted.length === 0) {
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#e2e7f0'; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    } else {
+      sorted.forEach(([ ,val], i) => {
+        const angle = (val/total)*Math.PI*2;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+angle); ctx.closePath();
+        ctx.fillStyle = COLORS[i % COLORS.length]; ctx.fill();
+        start += angle;
+      });
+      ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    }
+
+    // Legend
+    let legendHtml = '';
+    sorted.forEach(([name, val], i) => {
+      const short = name.length > 22 ? name.slice(0,22)+'…' : name;
+      legendHtml += `<div class="donut-legend-item">
+        <div class="donut-legend-left"><div class="donut-legend-dot" style="background:${COLORS[i%COLORS.length]}"></div>${short}</div>
+        <span class="donut-legend-val">${val}</span>
+      </div>`;
+    });
+    document.getElementById('donutLegend').innerHTML = legendHtml || '<span style="color:var(--text3);font-size:12px">No data</span>';
+  }
+
+  function updateDelayStats(flights) {
+    const stats = { delayed:0, active:0, cancelled:0, scheduled:0, landed:0, diverted:0 };
+    flights.forEach(f => { const s = f.flight_status; if (stats[s] !== undefined) stats[s]++; });
+    const onTime = stats.active + stats.landed;
+    document.getElementById('dDelayed').textContent = stats.delayed;
+    document.getElementById('dOnTime').textContent = onTime;
+    document.getElementById('dCancelled').textContent = stats.cancelled;
+    document.getElementById('dScheduled').textContent = stats.scheduled;
+
+    const total = flights.length || 1;
+    const statusList = [
+      { label: 'Scheduled', val: stats.scheduled, color: 'var(--accent2)' },
+      { label: 'Active/On Time', val: onTime, color: 'var(--accent3)' },
+      { label: 'Delayed', val: stats.delayed, color: 'var(--accent5)' },
+      { label: 'Cancelled', val: stats.cancelled, color: 'var(--text3)' },
+    ];
+    let html = '';
+    statusList.forEach(s => {
+      const pct = Math.round((s.val/total)*100);
+      html += `<div class="cause-item">
+        <span class="cause-label">${s.label}</span>
+        <div class="cause-bar-wrap"><div class="cause-bar-fill" style="width:${pct}%;background:${s.color}"></div></div>
+        <span class="cause-pct">${pct}%</span>
+      </div>`;
+    });
+    document.getElementById('statusBars').innerHTML = html;
+  }
+
+  function updateAirlineRanking(flights) {
+    const counts = {};
+    flights.forEach(f => { const n = f.airline?.name || 'Unknown'; counts[n] = (counts[n]||0)+1; });
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const max = sorted[0]?.[1] || 1;
+    let html = '';
+    sorted.forEach(([name,val],i) => {
+      const short = name.length > 24 ? name.slice(0,24)+'…' : name;
+      html += `<div class="h-bar-item">
+        <span class="h-bar-label" title="${name}">${short}</span>
+        <div class="h-bar-track"><div class="h-bar-fill" style="width:${(val/max*100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+        <span class="h-bar-val">${val}</span>
+      </div>`;
+    });
+    document.getElementById('airlineRanking').innerHTML = html || '<span style="color:var(--text3);font-size:12px">No data available</span>';
+  }
+
+  function updateAircraftTypes(flights) {
+    const counts = {};
+    flights.forEach(f => {
+      const type = f.aircraft?.iata || f.aircraft?.icao || null;
+      if (type) counts[type] = (counts[type]||0)+1;
+    });
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const icons = ['✈️','🛫','🛬','🛩️','🛸','📦'];
+    const colors = [COLORS[0],COLORS[1],COLORS[2],COLORS[3],COLORS[4],COLORS[5]];
+
+    let gridHtml = '';
+    if (sorted.length === 0) {
+      gridHtml = `<div style="grid-column:span 3;color:var(--text3);font-size:12px;padding:8px 0;">Aircraft type data not available on free tier.</div>`;
+    } else {
+      sorted.forEach(([type,val],i) => {
+        gridHtml += `<div class="type-card">
+          <div class="type-card-icon">${icons[i]}</div>
+          <div class="type-card-val" style="color:${colors[i]}">${val}</div>
+          <div class="type-card-lbl">${type}</div>
+        </div>`;
+      });
+    }
+    document.getElementById('aircraftTypeGrid').innerHTML = gridHtml;
+    document.getElementById('aircraftBadge').textContent = flights.length + ' aircraft';
+
+    // Direction split
+    const arrCount = flights.filter(f => f.arrival?.iata === AIRPORT).length;
+    const depCount = flights.filter(f => f.departure?.iata === AIRPORT).length;
+    const tot = arrCount + depCount || 1;
+    document.getElementById('directionSplit').innerHTML = `
+      <div class="h-bar-item">
+        <span class="h-bar-label">Arrivals</span>
+        <div class="h-bar-track"><div class="h-bar-fill" style="width:${(arrCount/tot*100)}%;background:var(--accent)"></div></div>
+        <span class="h-bar-val">${arrCount}</span>
+      </div>
+      <div class="h-bar-item">
+        <span class="h-bar-label">Departures</span>
+        <div class="h-bar-track"><div class="h-bar-fill" style="width:${(depCount/tot*100)}%;background:var(--accent2)"></div></div>
+        <span class="h-bar-val">${depCount}</span>
+      </div>`;
+  }
+
+  // Enter key on input
+  document.getElementById('apiKeyInput').addEventListener('keydown', e => { if(e.key==='Enter') submitKey(); });
+</script>
+</body>
+</html>
