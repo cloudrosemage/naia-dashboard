@@ -9,22 +9,21 @@
 
 🔗 **Live Dashboard:** [cloudrosemage.github.io/naia-air-traffic-dashboard](https://cloudrosemage.github.io/naia-air-traffic-dashboard)
 
-📄 **Project Documentation:** (https://www.notion.so/Aviation-Analytics-Dashboard-Live-Air-Traffic-Data-Over-Ninoy-Aquino-International-Airport-NAIA-34dcec93c31b80879fd7e3b197fa0a1f?source=copy_link)
+📄 **Project Documentation:** https://www.notion.so/Aviation-Analytics-Dashboard-Live-Air-Traffic-Data-Over-Ninoy-Aquino-International-Airport-NAIA-34dcec93c31b80879fd7e3b197fa0a1f?source=copy_link
 
-👤 **Author:** John Miguel Co Molina · Remote Operations Support & Junior Data Analyst · [LinkedIn](https://linkedin.com/in/cloudrosemage
+👤 **Author:** John Miguel Co Molina · Remote Operations Support & Junior Data Analyst · [LinkedIn](https://www.linkedin.com/in/cloudrosemage/)
 
 ---
 
 ## 📸 Preview
 
-<img width="1919" height="910" alt="image" src="https://github.com/user-attachments/assets/e013d961-f9be-4690-88c8-2ae09428db96" />
-
+<img width="1919" height="909" alt="image" src="https://github.com/user-attachments/assets/7d3e5b18-7a69-48c2-81a7-9738d941757b" />
 
 ---
 
 ## 📋 Project Description
 
-This project is a real-time, browser-based analytics dashboard that monitors live air traffic activity at Ninoy Aquino International Airport (NAIA), Manila, Philippines. It consumes live flight data from the AviationStack REST API and presents it in a visually compelling, management-grade interface covering arrivals, departures, delays, airline breakdown, runway utilization, terminal status, aircraft types, and trend analysis.
+This project is a real-time, browser-based analytics dashboard that monitors live air traffic activity at Ninoy Aquino International Airport (NAIA), Manila, Philippines. It consumes live flight data from the Aviationstack REST API and presents it in a visually compelling, management-grade interface covering arrivals, departures, delays, airline breakdown, runway utilization, terminal status, aircraft types, and trend analysis.
 
 The dashboard is built as a single self-contained `index.html` file using vanilla HTML, CSS, and JavaScript — no frameworks, no build tools, no backend required. It is deployed and publicly accessible via GitHub Pages.
 
@@ -36,7 +35,7 @@ This project was built with two interlocking purposes. The first is professional
 
 As a secondary objective, this project serves as an exploration of the aviation data landscape available to independent developers in the Philippines — mapping out what is publicly accessible, what requires formal agreements, and where the gaps are — and lays the groundwork for a more advanced version using paid data tiers or an eventual CAAP data-sharing arrangement.
 
-The dashboard is designed to be useful to a range of stakeholders. Airport management at MIAA can use it for a real-time overview of traffic volume, delay patterns, runway load, and airline performance. Airline operations teams benefit from a quick reference for on-time rates and flight statuses. Aviation analysts gain a structured, visual representation of flight data that would otherwise require manual querying. Passengers can use the live flight board to check arrivals and departures at NAIA. For portfolio reviewers and recruiters, the project serves as direct, working evidence of data, front-end, and API skills applied to a locally relevant problem. Finally, the open-source codebase and accompanying documentation offer a practical reference for other developers looking to integrate AviationStack in a Philippine aviation context.
+The dashboard is designed to be useful to a range of stakeholders. Airport management at MIAA can use it for a real-time overview of traffic volume, delay patterns, runway load, and airline performance. Airline operations teams benefit from a quick reference for on-time rates and flight statuses. Aviation analysts gain a structured, visual representation of flight data that would otherwise require manual querying. Passengers can use the live flight board to check arrivals and departures at NAIA. For portfolio reviewers and recruiters, the project serves as direct, working evidence of data, front-end, and API skills applied to a locally relevant problem. Finally, the open-source codebase and accompanying documentation offer a practical reference for other developers looking to integrate Aviationstack in a Philippine aviation context.
 
 ---
 
@@ -50,7 +49,7 @@ The dashboard is designed to be useful to a range of stakeholders. Airport manag
 | Canvas API | Donut chart rendering |
 | SVG | Live aircraft map |
 | Bebas Neue, DM Mono, Geist | Typography via Google Fonts |
-| AviationStack REST API | Live flight data source |
+| Aviationstack REST API | Live flight data source |
 | GitHub Pages | Free static site hosting and deployment |
 | Git + GitHub | Version control and repository hosting |
 | Notion | Project and process documentation |
@@ -60,9 +59,9 @@ The dashboard is designed to be useful to a range of stakeholders. Airport manag
 
 ## 📡 Main Data Source
 
-**AviationStack** — [aviationstack.com](https://aviationstack.com)
+**Aviationstack** — [aviationstack.com](https://aviationstack.com)
 
-AviationStack was selected as the primary data source after evaluating several aviation APIs available to independent developers in the Philippines. FlightRadar24 has no public API and is commercial-only. The Civil Aviation Authority of the Philippines (CAAP) has no public API and requires a formal data-sharing agreement. OpenSky Network is free and open but only provides raw ADS-B transponder data — it lacks flight numbers, airline names, schedules, and flight status, which are essential to this dashboard. AviationStack was the only option that provided all required fields (flight number, airline, route, status, delay, terminal) on a free tier with no credit card required.
+Aviationstack was selected as the primary data source after evaluating several aviation APIs available to independent developers in the Philippines. FlightRadar24 has no public API and is commercial-only. The Civil Aviation Authority of the Philippines (CAAP) has no public API and requires a formal data-sharing agreement. OpenSky Network is free and open but only provides raw ADS-B transponder data — it lacks flight numbers, airline names, schedules, and flight status, which are essential to this dashboard. Aviationstack was the only option that provided all required fields (flight number, airline, route, status, delay, terminal) on a free tier with no credit card required.
 
 | Property | Detail |
 |---|---|
@@ -82,14 +81,14 @@ AviationStack was selected as the primary data source after evaluating several a
 5. Open the live dashboard and paste your key into the setup screen
 6. Click **"Connect Dashboard"** — the dashboard authenticates and loads live data automatically
 
-> ⚠️ **Free tier limits:** 100 API calls/month · 2 calls per refresh (arrivals + departures) · Auto-refreshes every 5 minutes · Your key is stored in your browser session only and is never transmitted anywhere except AviationStack's servers.
+> ⚠️ **Free tier limits:** 100 API calls/month · 2 calls per refresh (arrivals + departures) · Auto-refreshes every 5 minutes · Your key is stored in your browser session only and is never transmitted anywhere except Aviationstack's servers.
 
 ---
 
 ## 🚀 Getting Started
 
 ### Use the live version
-Visit **[cloudrosemage.github.io/naia-air-traffic-dashboard](https://cloudrosemage.github.io/naia-air-traffic-dashboard)**, enter your AviationStack API key, and the dashboard loads immediately.
+Visit **[cloudrosemage.github.io/naia-air-traffic-dashboard](https://cloudrosemage.github.io/naia-air-traffic-dashboard)**, enter your Aviationstack API key, and the dashboard loads immediately.
 
 ### Run locally
 ```bash
@@ -108,7 +107,7 @@ naia-air-traffic-dashboard/
 │
 ├── index.html            # Main dashboard (single-file application)
 ├── README.md             # This file
-├── DATA_DICTIONARY.md    # AviationStack field definitions
+├── DATA_DICTIONARY.md    # Aviationstack field definitions
 └── CHANGELOG.md          # Version history
 ```
 
@@ -171,8 +170,8 @@ Initialization (runs once after key is validated)
 
 Core data loop (every 5 minutes via setInterval)
   └── loadAll()
-        ├── fetchF('arr')         → GET arrivals from AviationStack
-        ├── fetchF('dep')         → GET departures from AviationStack
+        ├── fetchF('arr')         → GET arrivals from Aviationstack
+        ├── fetchF('dep')         → GET departures from Aviationstack
         └── render functions (all receive the same combined data)
               ├── updateKPIs()          → KPI strip + animated fill bars
               ├── buildTicker()         → scrolling flight header strip
@@ -202,16 +201,16 @@ A small second `<style>` block at the very end declares keyframe animations for 
 
 | Panel | Data Source | Notes |
 |---|---|---|
-| KPI Strip | AviationStack live | Total flights, arrivals, departures, on-time rate, delays |
-| Live Aircraft Map | AviationStack + estimated positions | Free tier lacks GPS; positions estimated around MNL |
-| Status Bar Chart | AviationStack live | Arrivals vs departures grouped by `flight_status` |
-| Weekly Trend Chart | Estimated | Historical data requires paid AviationStack tier |
-| Live Flight Board | AviationStack live | Latest 14 flights with route, airline, time, and status |
+| KPI Strip | Aviationstack live | Total flights, arrivals, departures, on-time rate, delays |
+| Live Aircraft Map | Aviationstack + estimated positions | Free tier lacks GPS; positions estimated around MNL |
+| Status Bar Chart | Aviationstack live | Arrivals vs departures grouped by `flight_status` |
+| Weekly Trend Chart | Estimated | Historical data requires paid Aviationstack tier |
+| Live Flight Board | Aviationstack live | Latest 14 flights with route, airline, time, and status |
 | Runway Utilization | Estimated from flight volume | CAAP has no public runway data API |
-| Airline Share Donut | AviationStack live | Computed from `airline.name` field |
-| Delay Statistics | AviationStack live | Computed from `flight_status` field |
-| Aircraft Types | AviationStack (paid) / fallback | Free tier does not return `aircraft.iata` |
-| Airline Ranking | AviationStack live | Top 10 airlines by flight count |
+| Airline Share Donut | Aviationstack live | Computed from `airline.name` field |
+| Delay Statistics | Aviationstack live | Computed from `flight_status` field |
+| Aircraft Types | Aviationstack (paid) / fallback | Free tier does not return `aircraft.iata` |
+| Airline Ranking | Aviationstack live | Top 10 airlines by flight count |
 | Terminal Breakdown | Partial live + estimated | From `departure.terminal` with proportional fallback |
 
 ---
@@ -220,9 +219,9 @@ A small second `<style>` block at the very end declares keyframe animations for 
 
 - **Free tier cap:** 100 calls/month — monitor usage at [aviationstack.com](https://aviationstack.com)
 - **Aircraft positions:** Free tier lacks GPS coordinates; map uses estimated positions relative to MNL
-- **Aircraft types:** Only returned on paid AviationStack plans
+- **Aircraft types:** Only returned on paid Aviationstack plans
 - **Runway & terminal data:** Not available via any public NAIA or CAAP API; values are estimated
-- **Weekly trend:** Requires AviationStack's paid historical data endpoint
+- **Weekly trend:** Requires Aviationstack's paid historical data endpoint
 
 ---
 
@@ -244,4 +243,4 @@ MIT License — free to use, modify, and distribute with attribution.
 
 ---
 
-*Data provided by AviationStack · Not affiliated with MIAA, CAAP, or any airline*
+*Data provided by Aviationstack · Not affiliated with MIAA, CAAP, or any airline*
