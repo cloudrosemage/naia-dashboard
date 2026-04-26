@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAIA Air Traffic Analytics — v0.1 Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f3f8;
+    --border: #e2e7f0;
+    --accent: #1a56e8;
+    --accent2: #0ea5e9;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --accent5: #ef4444;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* HEADER */
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 64px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
+  }
+  .hdr-logo { font-size: 15px; font-weight: 800; letter-spacing: -0.3px; }
+  .hdr-sub { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: #ecfdf5; color: var(--accent3);
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  /* LAYOUT */
+  .main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .row2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .row4 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* STAT CARDS */
+  .stat-card {
+    background: var(--surface); border-radius: 16px; padding: 20px 24px;
+    box-shadow: var(--shadow); border: 1px solid var(--border); position: relative; overflow: hidden;
+  }
+  .stat-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 10px; }
+  .stat-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+  .stat-card.blue .stat-value { color: var(--accent); }
+  .stat-card.cyan .stat-value { color: var(--accent2); }
+  .stat-card.green .stat-value { color: var(--accent3); }
+  .stat-card.amber .stat-value { color: var(--accent4); }
+  .stat-sub { font-size: 12px; color: var(--text3); }
+
+  /* CARDS */
+  .card {
+    background: var(--surface); border-radius: 16px; padding: 24px;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .card-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .card-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: var(--surface2); color: var(--text2); }
+
+  /* BAR CHART */
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-bottom: 24px; position: relative; }
+  .bar-chart::before { content:''; position:absolute; bottom:24px; left:0; right:0; height:1px; background:var(--border); }
+  .bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+  .bar-wrap { width:100%; display:flex; gap:3px; align-items:flex-end; flex:1; }
+  .bar { flex:1; border-radius:4px 4px 0 0; cursor:pointer; transition:opacity .2s; }
+  .bar:hover { opacity:.8; }
+  .bar.arrivals { background: var(--accent); }
+  .bar.departures { background: var(--accent2); }
+  .bar-label { font-size: 10px; color: var(--text3); font-weight: 500; }
+
+  /* RUNWAY */
+  .runway-item {
+    background: var(--surface2); border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid var(--border); margin-bottom: 12px;
+  }
+  .runway-name { font-size: 13px; font-weight: 700; }
+  .runway-type { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .util-bar-wrap { width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+  .util-bar-fill { height: 100%; border-radius: 3px; }
+  .util-label { font-size: 11px; font-weight: 600; text-align: right; }
+  .status-pill { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; }
+  .status-pill.active { background: #ecfdf5; color: var(--accent3); }
+  .status-pill.maintenance { background: #fef3c7; color: #d97706; }
+
+  /* FLIGHT TABLE */
+  .flight-table { width: 100%; border-collapse: collapse; }
+  .flight-table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text3); padding: 0 0 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  .flight-table td { padding: 10px 0; border-bottom: 1px solid var(--surface2); font-size: 13px; vertical-align: middle; }
+  .flight-table tr:last-child td { border-bottom: none; }
+  .flight-no { font-weight: 800; font-size: 13px; color: var(--accent); }
+  .delay-badge { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 6px; }
+  .delay-badge.on-time  { background: #ecfdf5; color: var(--accent3); }
+  .delay-badge.delayed  { background: #fef2f2; color: var(--accent5); }
+  .delay-badge.boarding { background: #eff6ff; color: var(--accent); }
+  .delay-badge.landed   { background: #f0fdf4; color: #16a34a; }
+
+  /* DONUT */
+  .donut-wrap { position: relative; width: 140px; height: 140px; margin: 0 auto 20px; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .donut-center-val { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; }
+  .donut-center-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .donut-legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+  .donut-legend-left { display: flex; align-items: center; gap: 8px; color: var(--text2); }
+  .donut-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .donut-legend-val { font-weight: 600; color: var(--text); }
+
+  /* DELAY */
+  .delay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .delay-mini { background: var(--surface2); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); }
+  .delay-mini-val { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .delay-mini-lbl { font-size: 11px; color: var(--text3); }
+  .causes-list { display: flex; flex-direction: column; gap: 8px; }
+  .cause-item { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .cause-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .cause-bar-fill { height: 100%; border-radius: 3px; }
+  .cause-label { color: var(--text2); width: 80px; }
+  .cause-pct { color: var(--text2); font-weight: 600; width: 30px; text-align: right; }
+
+  /* HORIZONTAL BARS */
+  .h-bar-list { display: flex; flex-direction: column; gap: 12px; }
+  .h-bar-item { display: flex; align-items: center; gap: 12px; }
+  .h-bar-label { width: 120px; font-size: 12px; color: var(--text2); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .h-bar-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .h-bar-fill { height: 100%; border-radius: 4px; }
+  .h-bar-val { font-size: 12px; font-weight: 600; color: var(--text); width: 40px; text-align: right; }
+
+  /* AIRCRAFT TYPE */
+  .type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+  .type-card { background: var(--surface2); border-radius: 12px; padding: 14px; text-align: center; border: 1px solid var(--border); }
+  .type-card-icon { font-size: 20px; margin-bottom: 6px; }
+  .type-card-val { font-size: 18px; font-weight: 800; color: var(--text); line-height: 1; }
+  .type-card-lbl { font-size: 10px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: .4px; }
+
+  /* FOOTER */
+  .footer-bar { text-align: center; padding: 16px; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); background: var(--surface); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-logo">NAIA Air Traffic Control</div>
+    <div class="hdr-sub">Management Analytics Dashboard · v0.1 Prototype</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-size:13px;color:var(--text2)" id="currentDate"></span>
+    <div class="live-badge"><div class="live-dot"></div>Simulated Data</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- KPI STRIP -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-label">✈️ Total Flights Today</div>
+      <div class="stat-value">487</div>
+      <div class="stat-sub">arrivals + departures</div>
+    </div>
+    <div class="stat-card cyan">
+      <div class="stat-label">🛬 Passenger Volume</div>
+      <div class="stat-value">62,140</div>
+      <div class="stat-sub">estimated today</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">⏱️ On-Time Rate</div>
+      <div class="stat-value">78%</div>
+      <div class="stat-sub">380 of 487 flights</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-label">🛩️ Active Aircraft</div>
+      <div class="stat-value">143</div>
+      <div class="stat-sub">currently on ground/air</div>
+    </div>
+  </div>
+
+  <!-- BAR CHART + RUNWAY -->
+  <div class="row2">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Arrivals & Departures — Hourly</div>
+        <span class="card-badge">Simulated Data</span>
+      </div>
+      <div class="bar-chart" id="barChart"></div>
+      <div style="display:flex;gap:16px;margin-top:8px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--accent)"></div>Arrivals
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+          <div style="width:8px;height:8px;border-radius:2px;background:var(--accent2)"></div>Departures
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Runway Utilization</div>
+        <span class="card-badge">4 Runways</span>
+      </div>
+      <div class="runway-item">
+        <div><div class="runway-name">RWY 06/24</div><div class="runway-type">North — 3,737 m</div></div>
+        <div><div class="util-bar-wrap"><div class="util-bar-fill" style="width:88%;background:var(--accent)"></div></div><div class="util-label" style="color:var(--accent)">88%</div></div>
+        <span class="status-pill active">Active</span>
+      </div>
+      <div class="runway-item">
+        <div><div class="runway-name">RWY 13/31</div><div class="runway-type">South — 3,737 m</div></div>
+        <div><div class="util-bar-wrap"><div class="util-bar-fill" style="width:74%;background:var(--accent2)"></div></div><div class="util-label" style="color:var(--accent2)">74%</div></div>
+        <span class="status-pill active">Active</span>
+      </div>
+      <div class="runway-item">
+        <div><div class="runway-name">RWY 07/25</div><div class="runway-type">Cargo — 2,074 m</div></div>
+        <div><div class="util-bar-wrap"><div class="util-bar-fill" style="width:55%;background:var(--accent4)"></div></div><div class="util-label" style="color:var(--accent4)">55%</div></div>
+        <span class="status-pill active">Active</span>
+      </div>
+      <div class="runway-item" style="margin-bottom:0">
+        <div><div class="runway-name">RWY 02/20</div><div class="runway-type">Auxiliary — 1,890 m</div></div>
+        <div><div class="util-bar-wrap"><div class="util-bar-fill" style="width:20%;background:var(--text3)"></div></div><div class="util-label" style="color:var(--text3)">20%</div></div>
+        <span class="status-pill maintenance">Maint.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLIGHT BOARD + AIRLINE DONUT + DELAY STATS -->
+  <div class="row3">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Live Flight Board</div>
+        <span class="card-badge">Simulated</span>
+      </div>
+      <table class="flight-table">
+        <thead><tr><th>Flight</th><th>Route</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><span class="flight-no">PR 107</span></td><td style="color:var(--text2)">MNL→SIN</td><td style="color:var(--text2)">06:10</td><td><span class="delay-badge on-time">On Time</span></td></tr>
+          <tr><td><span class="flight-no">5J 889</span></td><td style="color:var(--text2)">MNL→HKG</td><td style="color:var(--text2)">06:45</td><td><span class="delay-badge boarding">Boarding</span></td></tr>
+          <tr><td><span class="flight-no">CX 900</span></td><td style="color:var(--text2)">HKG→MNL</td><td style="color:var(--text2)">07:15</td><td><span class="delay-badge landed">Landed</span></td></tr>
+          <tr><td><span class="flight-no">EK 332</span></td><td style="color:var(--text2)">DXB→MNL</td><td style="color:var(--text2)">07:30</td><td><span class="delay-badge delayed">+42 min</span></td></tr>
+          <tr><td><span class="flight-no">SQ 921</span></td><td style="color:var(--text2)">SIN→MNL</td><td style="color:var(--text2)">07:50</td><td><span class="delay-badge on-time">On Time</span></td></tr>
+          <tr><td><span class="flight-no">PR 660</span></td><td style="color:var(--text2)">MNL→ICN</td><td style="color:var(--text2)">08:00</td><td><span class="delay-badge boarding">Boarding</span></td></tr>
+          <tr><td><span class="flight-no">QF 19</span></td><td style="color:var(--text2)">SYD→MNL</td><td style="color:var(--text2)">08:20</td><td><span class="delay-badge delayed">+18 min</span></td></tr>
+          <tr><td><span class="flight-no">2P 381</span></td><td style="color:var(--text2)">MNL→CEB</td><td style="color:var(--text2)">08:35</td><td><span class="delay-badge on-time">On Time</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Airline Share</div>
+        <span class="card-badge">Simulated</span>
+      </div>
+      <div class="donut-wrap">
+        <canvas id="donutCanvas" width="140" height="140"></canvas>
+        <div class="donut-center">
+          <div class="donut-center-val">487</div>
+          <div class="donut-center-lbl">Flights</div>
+        </div>
+      </div>
+      <div class="donut-legend">
+        <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#1a56e8"></div>Philippine Airlines</div><span class="donut-legend-val">142</span></div>
+        <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#0ea5e9"></div>Cebu Pacific</div><span class="donut-legend-val">118</span></div>
+        <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#10b981"></div>AirAsia Philippines</div><span class="donut-legend-val">87</span></div>
+        <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#f59e0b"></div>International Carriers</div><span class="donut-legend-val">94</span></div>
+        <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#a78bfa"></div>Charter / Private</div><span class="donut-legend-val">46</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Delay Statistics</div>
+        <span class="card-badge">Simulated</span>
+      </div>
+      <div class="delay-grid">
+        <div class="delay-mini"><div class="delay-mini-val" style="color:var(--accent5)">107</div><div class="delay-mini-lbl">Delayed flights</div></div>
+        <div class="delay-mini"><div class="delay-mini-val" style="color:var(--accent4)">31 min</div><div class="delay-mini-lbl">Avg. delay time</div></div>
+        <div class="delay-mini"><div class="delay-mini-val" style="color:var(--accent3)">380</div><div class="delay-mini-lbl">On-time flights</div></div>
+        <div class="delay-mini"><div class="delay-mini-val" style="color:var(--text3)">0</div><div class="delay-mini-lbl">Cancellations</div></div>
+      </div>
+      <div class="causes-list">
+        <div class="cause-item"><span class="cause-label">Weather</span><div class="cause-bar-wrap"><div class="cause-bar-fill" style="width:48%;background:var(--accent2)"></div></div><span class="cause-pct">48%</span></div>
+        <div class="cause-item"><span class="cause-label">ATC / Traffic</span><div class="cause-bar-wrap"><div class="cause-bar-fill" style="width:27%;background:var(--accent4)"></div></div><span class="cause-pct">27%</span></div>
+        <div class="cause-item"><span class="cause-label">Late Aircraft</span><div class="cause-bar-wrap"><div class="cause-bar-fill" style="width:15%;background:var(--accent5)"></div></div><span class="cause-pct">15%</span></div>
+        <div class="cause-item"><span class="cause-label">Ops / Gate</span><div class="cause-bar-wrap"><div class="cause-bar-fill" style="width:10%;background:var(--text3)"></div></div><span class="cause-pct">10%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AIRLINE RANKING + AIRCRAFT TYPES -->
+  <div class="row4">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Top Airlines by Flight Count</div>
+        <span class="card-badge">Simulated</span>
+      </div>
+      <div class="h-bar-list">
+        <div class="h-bar-item"><span class="h-bar-label">Philippine Airlines</span><div class="h-bar-track"><div class="h-bar-fill" style="width:100%;background:var(--accent)"></div></div><span class="h-bar-val">4,312</span></div>
+        <div class="h-bar-item"><span class="h-bar-label">Cebu Pacific</span><div class="h-bar-track"><div class="h-bar-fill" style="width:86%;background:var(--accent2)"></div></div><span class="h-bar-val">3,718</span></div>
+        <div class="h-bar-item"><span class="h-bar-label">AirAsia Philippines</span><div class="h-bar-track"><div class="h-bar-fill" style="width:62%;background:var(--accent3)"></div></div><span class="h-bar-val">2,670</span></div>
+        <div class="h-bar-item"><span class="h-bar-label">Singapore Airlines</span><div class="h-bar-track"><div class="h-bar-fill" style="width:48%;background:var(--accent4)"></div></div><span class="h-bar-val">2,068</span></div>
+        <div class="h-bar-item"><span class="h-bar-label">Cathay Pacific</span><div class="h-bar-track"><div class="h-bar-fill" style="width:40%;background:#a78bfa"></div></div><span class="h-bar-val">1,720</span></div>
+        <div class="h-bar-item"><span class="h-bar-label">Emirates</span><div class="h-bar-track"><div class="h-bar-fill" style="width:30%;background:#f43f5e"></div></div><span class="h-bar-val">1,290</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Aircraft Types in Service</div>
+        <span class="card-badge">Simulated</span>
+      </div>
+      <div class="type-grid">
+        <div class="type-card"><div class="type-card-icon">✈️</div><div class="type-card-val" style="color:var(--accent)">54</div><div class="type-card-lbl">Airbus A320</div></div>
+        <div class="type-card"><div class="type-card-icon">🛫</div><div class="type-card-val" style="color:var(--accent2)">38</div><div class="type-card-lbl">Boeing 737</div></div>
+        <div class="type-card"><div class="type-card-icon">🛬</div><div class="type-card-val" style="color:var(--accent3)">21</div><div class="type-card-lbl">Airbus A380</div></div>
+        <div class="type-card"><div class="type-card-icon">🛩️</div><div class="type-card-val" style="color:var(--accent4)">14</div><div class="type-card-lbl">Boeing 777</div></div>
+        <div class="type-card"><div class="type-card-icon">🚁</div><div class="type-card-val" style="color:#a78bfa">9</div><div class="type-card-lbl">Private Jets</div></div>
+        <div class="type-card"><div class="type-card-icon">📦</div><div class="type-card-val" style="color:var(--text3)">7</div><div class="type-card-lbl">Cargo Aircraft</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-bar">
+  NAIA Air Traffic Analytics · v0.1 Prototype · All data is simulated · Not affiliated with MIAA or CAAP
+</div>
+
+<script>
+  document.getElementById('currentDate').textContent =
+    new Date().toLocaleDateString('en-PH', {
+      weekday:'long', year:'numeric', month:'long', day:'numeric'
+    });
+
+  const barData = [
+    {h:'00',arr:8,dep:6},{h:'01',arr:5,dep:4},{h:'02',arr:3,dep:3},
+    {h:'03',arr:2,dep:2},{h:'04',arr:7,dep:9},{h:'05',arr:14,dep:18},
+    {h:'06',arr:22,dep:24},{h:'07',arr:28,dep:26},{h:'08',arr:31,dep:30},
+    {h:'09',arr:27,dep:25},{h:'10',arr:20,dep:22},{h:'11',arr:18,dep:17},
+    {h:'12',arr:15,dep:16},{h:'13',arr:14,dep:13},{h:'14',arr:11,dep:12},
+    {h:'15',arr:9,dep:10},{h:'16',arr:6,dep:7},
+  ];
+  const maxVal = Math.max(...barData.flatMap(d => [d.arr, d.dep]));
+  const chart  = document.getElementById('barChart');
+  barData.forEach(d => {
+    const g   = document.createElement('div'); g.className = 'bar-group';
+    const bw  = document.createElement('div'); bw.className = 'bar-wrap';
+    const arr = document.createElement('div');
+    arr.className = 'bar arrivals';
+    arr.style.height = (d.arr / maxVal * 100) + '%';
+    const dep = document.createElement('div');
+    dep.className = 'bar departures';
+    dep.style.height = (d.dep / maxVal * 100) + '%';
+    bw.append(arr, dep);
+    const lbl = document.createElement('div');
+    lbl.className = 'bar-label'; lbl.textContent = d.h;
+    g.append(bw, lbl); chart.appendChild(g);
+  });
+
+  const canvas   = document.getElementById('donutCanvas');
+  const ctx      = canvas.getContext('2d');
+  const segments = [
+    {val:142, color:'#1a56e8'},
+    {val:118, color:'#0ea5e9'},
+    {val:87,  color:'#10b981'},
+    {val:94,  color:'#f59e0b'},
+    {val:46,  color:'#a78bfa'},
+  ];
+  const total = segments.reduce((s,d) => s + d.val, 0);
+  let start   = -Math.PI / 2;
+  segments.forEach(seg => {
+    const angle = seg.val / total * Math.PI * 2;
+    ctx.beginPath(); ctx.moveTo(70, 70);
+    ctx.arc(70, 70, 58, start, start + angle);
+    ctx.closePath(); ctx.fillStyle = seg.color; ctx.fill();
+    start += angle;
+  });
+  ctx.beginPath(); ctx.arc(70, 70, 38, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.fill();
+</script>
+</body>
+</html>

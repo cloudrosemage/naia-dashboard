@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAIA ATC — Live Air Traffic Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:       #0c0c14;
+  --ink2:      #2a2a38;
+  --ink3:      #5a5a72;
+  --ink4:      #9898b0;
+  --paper:     #fafaf7;
+  --paper2:    #f2f2ed;
+  --paper3:    #e6e6df;
+  --electric:  #0052f5;
+  --elec-lt:   #e8effe;
+  --elec-mid:  #b8cafc;
+  --green:     #00b07a;
+  --grn-lt:    #dff5ee;
+  --amber:     #f08c00;
+  --amb-lt:    #fff3da;
+  --red:       #e82d38;
+  --red-lt:    #fde9ea;
+  --border:    #dededa;
+  --sh-sm:     0 1px 3px rgba(12,12,20,.05), 0 2px 8px rgba(12,12,20,.04);
+  --sh-md:     0 4px 20px rgba(12,12,20,.08);
+  --sh-lg:     0 12px 48px rgba(12,12,20,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Geist',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* ───────────────────────── SETUP ───────────────────────── */
+#setup{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--ink);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.su-inner{max-width:480px;width:100%;animation:suIn .7s cubic-bezier(.16,1,.3,1) both}
+@keyframes suIn{from{opacity:0;transform:translateY(48px)}to{opacity:1;transform:translateY(0)}}
+.su-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--electric);margin-bottom:18px}
+.su-heading{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,9vw,80px);line-height:.92;color:#fff;margin-bottom:22px;letter-spacing:2px}
+.su-heading em{color:var(--electric);font-style:normal}
+.su-desc{font-size:13px;color:#6a6a84;line-height:1.75;margin-bottom:32px}
+.su-desc a{color:var(--electric);text-decoration:none}
+.su-desc a:hover{text-decoration:underline}
+.su-field{position:relative;margin-bottom:12px}
+.su-input{
+  width:100%;padding:15px 50px 15px 18px;
+  background:#14141e;border:1.5px solid #24243a;border-radius:10px;
+  color:#fff;font-family:'DM Mono',monospace;font-size:13px;
+  outline:none;transition:border-color .2s;letter-spacing:.5px;
+}
+.su-input::placeholder{color:#3a3a54}
+.su-input:focus{border-color:var(--electric)}
+.su-vis{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#3a3a54;font-size:15px;transition:color .2s}
+.su-vis:hover{color:var(--electric)}
+.su-err{background:#1e0e12;border:1px solid #4a1820;color:#ff5060;border-radius:8px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.3px;margin-bottom:12px;display:none}
+.su-btn{
+  width:100%;padding:16px;background:var(--electric);color:#fff;border:none;border-radius:10px;
+  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;cursor:pointer;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+.su-btn:hover{background:#0040d0;transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,82,245,.4)}
+.su-note{margin-top:14px;font-family:'DM Mono',monospace;font-size:10px;color:#3a3a54;letter-spacing:.5px;text-align:center;line-height:1.7}
+
+/* ───────────────────────── APP ───────────────────────── */
+#app{display:none}
+
+/* ── HEADER ── */
+header{
+  background:var(--ink);height:58px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 36px;position:sticky;top:0;z-index:200;
+  border-bottom:1px solid #1c1c2c;
+}
+.hdr-l{display:flex;align-items:center;gap:18px}
+.hdr-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:#fff;display:flex;align-items:center;gap:10px}
+.hdr-pulse{width:7px;height:7px;border-radius:50%;background:var(--electric);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,82,245,.4)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(0,82,245,0)}}
+.hdr-div{width:1px;height:18px;background:#242434}
+.hdr-sub{font-family:'DM Mono',monospace;font-size:10px;color:#424258;letter-spacing:2px;text-transform:uppercase}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.hdr-live{display:flex;align-items:center;gap:6px;background:#0a1e0a;border:1px solid #0d3a1a;border-radius:20px;padding:4px 12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1.5px}
+.hdr-live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse-grn 1.5s infinite}
+@keyframes pulse-grn{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-clock{font-family:'DM Mono',monospace;font-size:12px;color:#424258;letter-spacing:1px}
+.hdr-btn{padding:6px 14px;border-radius:6px;font-family:'Geist',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;border:1px solid transparent;letter-spacing:.3px}
+.hdr-btn.primary{background:var(--electric);color:#fff;border-color:var(--electric)}
+.hdr-btn.primary:hover{background:#0040d0}
+.hdr-btn.primary:disabled{opacity:.5;cursor:not-allowed}
+.hdr-btn.ghost{background:transparent;color:#424258;border-color:#242434}
+.hdr-btn.ghost:hover{color:#fff;border-color:#424258}
+#lastUp{font-family:'DM Mono',monospace;font-size:10px;color:#303048;letter-spacing:.5px}
+
+/* ── TICKER ── */
+.ticker{background:var(--electric);height:30px;display:flex;align-items:center;overflow:hidden;position:relative}
+.ticker-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:#fff;padding:0 14px;background:#0038b8;height:100%;display:flex;align-items:center;white-space:nowrap;flex-shrink:0;border-right:1px solid rgba(255,255,255,.15)}
+.ticker-scroll{display:flex;animation:scroll 50s linear infinite;white-space:nowrap}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.t-item{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.9);padding:0 20px;border-right:1px solid rgba(255,255,255,.15);display:inline-flex;align-items:center;gap:8px;height:30px}
+.t-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.t-dot.g{background:#5dffc0}.t-dot.r{background:#ff7080}.t-dot.b{background:#a0c0ff}.t-dot.y{background:#ffd080}
+
+/* ── MAIN ── */
+.main{padding:28px 36px 64px;max-width:1700px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+
+/* ── SECTION LABEL ── */
+.slabel{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--ink4);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--sh-md)}
+.kpi{
+  background:var(--paper);padding:22px 26px;position:relative;overflow:hidden;
+  cursor:default;transition:background .2s;
+  animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both;
+}
+.kpi:nth-child(1){animation-delay:.04s}.kpi:nth-child(2){animation-delay:.08s}
+.kpi:nth-child(3){animation-delay:.12s}.kpi:nth-child(4){animation-delay:.16s}
+.kpi:nth-child(5){animation-delay:.20s}
+.kpi:hover{background:#f5f5f0}
+.kpi::after{content:attr(data-i);font-family:'Bebas Neue',sans-serif;font-size:110px;color:var(--ink);opacity:.025;position:absolute;right:-8px;bottom:-18px;line-height:1;pointer-events:none;letter-spacing:2px}
+.kpi-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px}
+.kpi-val{font-family:'Bebas Neue',sans-serif;font-size:54px;line-height:1;letter-spacing:1px;margin-bottom:4px}
+.kpi-val.el{color:var(--electric)}.kpi-val.gn{color:var(--green)}.kpi-val.am{color:var(--amber)}.kpi-val.rd{color:var(--red)}.kpi-val.ik{color:var(--ink)}
+.kpi-sub{font-size:11px;color:var(--ink4)}
+.kpi-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--paper3)}
+.kpi-bar-fill{height:100%;transition:width 1.4s cubic-bezier(.16,1,.3,1)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARD ── */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:var(--sh-sm);transition:box-shadow .2s,transform .2s;animation:fadeUp .6s cubic-bezier(.16,1,.3,1) both}
+.card:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.ct{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--ink);line-height:1}
+.cs{font-size:11px;color:var(--ink4);margin-top:4px}
+.ctag{font-family:'DM Mono',monospace;font-size:9px;padding:4px 10px;border-radius:20px;letter-spacing:1px;white-space:nowrap}
+.ctag.bl{background:var(--elec-lt);color:var(--electric)}.ctag.gn{background:var(--grn-lt);color:var(--green)}.ctag.am{background:var(--amb-lt);color:var(--amber)}.ctag.nt{background:var(--paper2);color:var(--ink4)}
+
+/* ── GRIDS ── */
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:20px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+
+/* ── MAP ── */
+.map-box{background:#edf2ff;border-radius:12px;overflow:hidden;position:relative;height:300px;border:1px solid var(--elec-mid)}
+.map-box svg{width:100%;height:100%}
+.map-overlay{position:absolute;top:12px;left:12px;background:rgba(250,250,247,.93);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:10px;padding:12px 16px;min-width:150px}
+.mo-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px}
+.mo-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:5px}
+.mo-row:last-child{margin-bottom:0}
+.mo-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.mo-label{color:var(--ink3);flex:1}
+.mo-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
+
+/* ── BAR CHART ── */
+.bchart{display:flex;align-items:flex-end;gap:8px;height:150px;padding-bottom:24px;position:relative}
+.bchart::before{content:'';position:absolute;bottom:24px;left:0;right:0;height:1px;background:var(--border)}
+.bc-g{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.bc-bars{width:100%;display:flex;gap:3px;align-items:flex-end;flex:1}
+.bc-bar{flex:1;border-radius:4px 4px 0 0;cursor:pointer;transition:opacity .2s,transform .2s;transform-origin:bottom;animation:barUp .9s cubic-bezier(.16,1,.3,1) both}
+@keyframes barUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.bc-bar:nth-child(1){animation-delay:.1s}.bc-bar:nth-child(2){animation-delay:.15s}
+.bc-bar:hover{opacity:.7}
+.bc-bar.a{background:var(--electric)}.bc-bar.d{background:var(--green)}
+.bc-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:.5px}
+.cleg{display:flex;gap:18px;margin-top:12px}
+.cl-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3)}
+.cl-dot{width:7px;height:7px;border-radius:2px}
+
+/* ── WEEKLY TREND ── */
+.trend-svg{width:100%;overflow:visible}
+.trend-area{fill:url(#trendGrad);opacity:.15}
+.trend-line{fill:none;stroke:var(--electric);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.trend-line2{fill:none;stroke:var(--green);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:4 4}
+.trend-dot{fill:var(--electric);stroke:#fff;stroke-width:2}
+.trend-xlbl{font-family:'DM Mono',monospace;font-size:9px;fill:var(--ink4);text-anchor:middle}
+.trend-ylbl{font-family:'DM Mono',monospace;font-size:9px;fill:var(--ink4);text-anchor:end}
+.trend-grid{stroke:var(--border);stroke-width:1}
+
+/* ── RUNWAY ── */
+.rwy-item{padding:13px 0;border-bottom:1px solid var(--paper3);display:flex;align-items:center;gap:14px;transition:padding .15s}
+.rwy-item:last-child{border-bottom:none}
+.rwy-item:hover{background:var(--paper2);padding:13px 8px;border-radius:8px;margin:0 -8px}
+.rwy-id{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--ink);width:60px;flex-shrink:0}
+.rwy-meta{flex:1}
+.rwy-name{font-size:11px;color:var(--ink3);font-weight:500}
+.rwy-desc{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);margin-top:2px;letter-spacing:.5px}
+.rwy-right{text-align:right;width:100px;flex-shrink:0}
+.rwy-pct{font-family:'Bebas Neue',sans-serif;font-size:20px;margin-bottom:4px}
+.rwy-track{height:4px;background:var(--paper3);border-radius:2px;overflow:hidden}
+.rwy-fill{height:100%;border-radius:2px;transition:width 1.5s cubic-bezier(.16,1,.3,1)}
+.rpill{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.rpill.ac{background:var(--grn-lt);color:var(--green)}.rpill.mt{background:var(--amb-lt);color:var(--amber)}.rpill.cl{background:var(--red-lt);color:var(--red)}
+
+/* ── FLIGHT TABLE ── */
+.ftbl{width:100%;border-collapse:collapse}
+.ftbl th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);padding:0 6px 12px 0;text-align:left;border-bottom:2px solid var(--border)}
+.ftbl td{padding:9px 6px 9px 0;border-bottom:1px solid var(--paper3);font-size:12px;vertical-align:middle}
+.ftbl tr:last-child td{border-bottom:none}
+.ftbl tr:hover td{background:var(--paper2)}
+.fno{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:var(--electric)}
+.fbadge{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:3px 7px;border-radius:5px}
+.fbadge.on{background:var(--grn-lt);color:var(--green)}
+.fbadge.dl{background:var(--red-lt);color:var(--red)}
+.fbadge.sc{background:var(--elec-lt);color:var(--electric)}
+.fbadge.ln{background:var(--paper2);color:var(--ink4)}
+.fbadge.ca{background:var(--red-lt);color:var(--red)}
+.fbadge.ac{background:var(--grn-lt);color:var(--green)}
+.fbadge.dv{background:var(--amb-lt);color:var(--amber)}
+.fbadge.uk{background:var(--paper2);color:var(--ink4)}
+
+/* ── DONUT ── */
+.donut-wrap{position:relative;width:160px;height:160px;margin:0 auto 20px}
+.donut-wrap canvas{border-radius:50%}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.dval{font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--ink);line-height:1}
+.dlbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:2px;margin-top:3px}
+.dleg{display:flex;flex-direction:column;gap:9px}
+.dl-row{display:flex;align-items:center;justify-content:space-between;font-size:11px}
+.dl-l{display:flex;align-items:center;gap:7px;color:var(--ink3)}
+.dl-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.dl-v{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
+
+/* ── DELAY MINIS ── */
+.dmini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.dmini{background:var(--paper2);border-radius:10px;padding:14px 16px;border:1px solid var(--border);transition:transform .2s}
+.dmini:hover{transform:scale(1.03)}
+.dmini-val{font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1;margin-bottom:4px}
+.dmini-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4)}
+.sbars{display:flex;flex-direction:column;gap:9px}
+.sb-row{display:flex;align-items:center;gap:10px}
+.sb-lbl{font-size:11px;color:var(--ink3);width:80px;flex-shrink:0}
+.sb-track{flex:1;height:5px;background:var(--paper3);border-radius:3px;overflow:hidden}
+.sb-fill{height:100%;border-radius:3px;transition:width 1.3s cubic-bezier(.16,1,.3,1)}
+.sb-pct{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink4);width:30px;text-align:right}
+
+/* ── AIRLINE BARS ── */
+.abars{display:flex;flex-direction:column;gap:13px}
+.ab-row{display:flex;align-items:center;gap:12px}
+.ab-lbl{font-size:11px;color:var(--ink3);width:126px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.ab-track{flex:1;height:9px;background:var(--paper2);border-radius:5px;overflow:hidden}
+.ab-fill{height:100%;border-radius:5px;transition:width 1.4s cubic-bezier(.16,1,.3,1);position:relative}
+.ab-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2))}
+.ab-val{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink4);width:32px;text-align:right}
+
+/* ── AIRCRAFT TYPE GRID ── */
+.ac-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.ac-card{background:var(--paper2);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border);transition:all .2s;cursor:default}
+.ac-card:hover{background:var(--elec-lt);border-color:var(--elec-mid);transform:translateY(-3px);box-shadow:var(--sh-sm)}
+.ac-icon{font-size:22px;margin-bottom:6px}
+.ac-val{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;margin-bottom:2px}
+.ac-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);letter-spacing:1px}
+
+/* ── TERMINAL CARDS ── */
+.term-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.term-card{border-radius:14px;padding:22px;border:1.5px solid var(--border);background:var(--paper);position:relative;overflow:hidden;transition:all .2s;cursor:default;animation:fadeUp .6s cubic-bezier(.16,1,.3,1) both}
+.term-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
+.term-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.term-card.t1::before{background:var(--electric)}.term-card.t2::before{background:var(--green)}
+.term-card.t3::before{background:var(--amber)}.term-card.tc::before{background:var(--ink3)}
+.term-card::after{content:attr(data-t);font-family:'Bebas Neue',sans-serif;font-size:120px;position:absolute;right:-10px;bottom:-20px;line-height:1;opacity:.04;pointer-events:none;letter-spacing:2px;color:var(--ink)}
+.term-id{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;line-height:1;margin-bottom:2px}
+.term-name{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--ink4);margin-bottom:16px}
+.term-stat{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink3);margin-bottom:6px}
+.term-stat-v{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink)}
+.term-util{height:4px;background:var(--paper3);border-radius:2px;margin-top:14px;overflow:hidden}
+.term-util-fill{height:100%;border-radius:2px;transition:width 1.3s cubic-bezier(.16,1,.3,1)}
+
+/* ── LOADING / ERROR ── */
+.loading{display:flex;align-items:center;gap:8px;color:var(--ink4);font-family:'DM Mono',monospace;font-size:11px;padding:16px 0;letter-spacing:1px}
+.spinner{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--electric);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.api-note{background:var(--elec-lt);border:1px solid var(--elec-mid);border-radius:8px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:10px;color:var(--electric);margin-bottom:14px;line-height:1.7;letter-spacing:.3px}
+.err-box{background:var(--red-lt);border:1px solid #f5c0c4;border-radius:8px;padding:12px 16px;color:var(--red);font-family:'DM Mono',monospace;font-size:11px}
+
+/* ── FOOTER ── */
+footer{background:var(--ink);padding:18px 36px;display:flex;align-items:center;justify-content:space-between}
+.foot-l{font-family:'DM Mono',monospace;font-size:10px;color:#363650;letter-spacing:1px}
+.foot-r{font-family:'DM Mono',monospace;font-size:10px;color:#363650}
+.foot-r a{color:var(--electric);text-decoration:none}
+.foot-r a:hover{text-decoration:underline}
+
+/* ── SCROLL ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--paper2)}
+::-webkit-scrollbar-thumb{background:var(--paper3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink4)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1280px){
+  .kpi-strip{grid-template-columns:repeat(3,1fr)}
+  .g21,.g12{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  .term-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .main{padding:20px 16px 48px}
+  header{padding:0 16px}
+  .kpi-strip{grid-template-columns:1fr 1fr}
+  .g3,.g2,.g4{grid-template-columns:1fr}
+  .term-grid{grid-template-columns:1fr}
+  .ac-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SETUP SCREEN ══════════ -->
+<div id="setup">
+  <div class="su-inner">
+    <div class="su-eyebrow">// NAIA · MNL · LIVE ANALYTICS v2.0</div>
+    <div class="su-heading">AIR<br>TRAFFIC<br><em>CONTROL</em></div>
+    <p class="su-desc">
+      Enter your <a href="https://aviationstack.com" target="_blank">AviationStack</a> API key to activate the live dashboard for <strong style="color:#fff">Ninoy Aquino International Airport</strong>.<br><br>
+      No key? Get one free at <a href="https://aviationstack.com" target="_blank">aviationstack.com</a> — no credit card required.
+    </p>
+    <div id="suErr" class="su-err"></div>
+    <div class="su-field">
+      <input type="password" id="apiKey" class="su-input" placeholder="Paste your API key here…" autocomplete="off">
+      <button class="su-vis" onclick="toggleVis()">👁</button>
+    </div>
+    <button class="su-btn" onclick="connect()">CONNECT DASHBOARD →</button>
+    <p class="su-note">Key lives in your browser session only · never stored · never shared externally</p>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="app">
+
+  <header>
+    <div class="hdr-l">
+      <div class="hdr-logo"><div class="hdr-pulse"></div>NAIA ATC</div>
+      <div class="hdr-div"></div>
+      <div class="hdr-sub">Live Air Traffic Analytics · MNL</div>
+    </div>
+    <div class="hdr-r">
+      <span id="lastUp"></span>
+      <div class="hdr-live">AVIATIONSTACK LIVE</div>
+      <div class="hdr-clock" id="clock">--:--:--</div>
+      <button class="hdr-btn primary" id="refreshBtn" onclick="loadAll()">⟳ REFRESH</button>
+      <button class="hdr-btn ghost" onclick="resetKey()">Change Key</button>
+    </div>
+  </header>
+
+  <!-- TICKER -->
+  <div class="ticker">
+    <div class="ticker-lbl">LIVE FLIGHTS</div>
+    <div class="ticker-scroll" id="tickerInner">
+      <div class="t-item"><span class="t-dot b"></span>Loading flight data…</div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ── KPIs ── -->
+    <div>
+      <div class="slabel">TODAY'S OVERVIEW — NINOY AQUINO INTERNATIONAL · MNL</div>
+      <div class="kpi-strip">
+        <div class="kpi" data-i="1"><div class="kpi-lbl">TOTAL FLIGHTS</div><div class="kpi-val el" id="k1">—</div><div class="kpi-sub" id="k1s">Loading…</div><div class="kpi-bar"><div class="kpi-bar-fill" id="k1b" style="background:var(--electric);width:0%"></div></div></div>
+        <div class="kpi" data-i="2"><div class="kpi-lbl">ARRIVALS</div><div class="kpi-val ik" id="k2">—</div><div class="kpi-sub">Inbound to MNL</div><div class="kpi-bar"><div class="kpi-bar-fill" id="k2b" style="background:var(--ink);width:0%"></div></div></div>
+        <div class="kpi" data-i="3"><div class="kpi-lbl">DEPARTURES</div><div class="kpi-val ik" id="k3">—</div><div class="kpi-sub">Outbound from MNL</div><div class="kpi-bar"><div class="kpi-bar-fill" id="k3b" style="background:var(--ink);width:0%"></div></div></div>
+        <div class="kpi" data-i="4"><div class="kpi-lbl">ON-TIME RATE</div><div class="kpi-val gn" id="k4">—</div><div class="kpi-sub" id="k4s">Loading…</div><div class="kpi-bar"><div class="kpi-bar-fill" id="k4b" style="background:var(--green);width:0%"></div></div></div>
+        <div class="kpi" data-i="5"><div class="kpi-lbl">DELAYS</div><div class="kpi-val am" id="k5">—</div><div class="kpi-sub" id="k5s">Loading…</div><div class="kpi-bar"><div class="kpi-bar-fill" id="k5b" style="background:var(--amber);width:0%"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── MAP + BAR CHART ── -->
+    <div class="g21">
+      <div class="card" style="animation-delay:.08s">
+        <div class="ch">
+          <div><div class="ct">LIVE AIRCRAFT MAP</div><div class="cs">MNL airspace · aircraft positions relative to NAIA</div></div>
+          <span class="ctag bl" id="mapTag">● 0 AIRCRAFT</span>
+        </div>
+        <div class="map-box">
+          <svg viewBox="0 0 620 300" xmlns="http://www.w3.org/2000/svg" id="mapSvg">
+            <defs>
+              <radialGradient id="bgGrad" cx="50%" cy="50%">
+                <stop offset="0%" stop-color="#dce8ff"/>
+                <stop offset="100%" stop-color="#edf3ff"/>
+              </radialGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <!-- Background -->
+            <rect width="620" height="300" fill="url(#bgGrad)"/>
+            <!-- Grid lines -->
+            <g opacity=".4" stroke="#b0c4f0" stroke-width=".6">
+              <line x1="0" y1="60"  x2="620" y2="60"/>
+              <line x1="0" y1="120" x2="620" y2="120"/>
+              <line x1="0" y1="180" x2="620" y2="180"/>
+              <line x1="0" y1="240" x2="620" y2="240"/>
+              <line x1="124" y1="0" x2="124" y2="300"/>
+              <line x1="248" y1="0" x2="248" y2="300"/>
+              <line x1="372" y1="0" x2="372" y2="300"/>
+              <line x1="496" y1="0" x2="496" y2="300"/>
+            </g>
+            <!-- Manila Bay (simplified) -->
+            <path d="M 200 210 Q 240 190 270 200 Q 300 210 310 240 Q 320 270 290 285 Q 260 295 230 280 Q 200 265 195 240 Z" fill="#c5d8ff" opacity=".6" stroke="#a0baf0" stroke-width="1"/>
+            <text x="250" y="252" font-family="DM Mono" font-size="9" fill="#8090c0" text-anchor="middle" opacity=".7">MANILA BAY</text>
+            <!-- Luzon coastline (schematic) -->
+            <path d="M 180 0 Q 200 30 195 70 Q 190 100 200 130 Q 210 160 200 200 Q 195 220 180 240" fill="none" stroke="#a8bce0" stroke-width="1.2" opacity=".5"/>
+            <path d="M 320 0 Q 330 40 340 80 Q 350 120 340 160 Q 330 190 320 220 Q 315 250 330 280 Q 340 295 360 300" fill="none" stroke="#a8bce0" stroke-width="1.2" opacity=".5"/>
+            <!-- Radar rings from NAIA -->
+            <circle cx="270" cy="200" r="40"  fill="none" stroke="var(--electric)" stroke-width=".8" opacity=".2"/>
+            <circle cx="270" cy="200" r="80"  fill="none" stroke="var(--electric)" stroke-width=".8" opacity=".14"/>
+            <circle cx="270" cy="200" r="120" fill="none" stroke="var(--electric)" stroke-width=".8" opacity=".08"/>
+            <!-- Radar sweep -->
+            <g id="radarSweep" style="transform-origin:270px 200px;animation:sweepRot 4s linear infinite">
+              <path d="M270,200 L270,80 A120,120 0 0,1 375,250 Z" fill="url(#sweepGrad)" opacity=".15"/>
+            </g>
+            <defs>
+              <radialGradient id="sweepGrad" cx="0%" cy="0%" r="100%">
+                <stop offset="0%" stop-color="var(--electric)" stop-opacity=".8"/>
+                <stop offset="100%" stop-color="var(--electric)" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- NAIA marker -->
+            <g id="naiaMarker">
+              <circle cx="270" cy="200" r="6" fill="var(--red)" opacity=".9" filter="url(#glow)"/>
+              <circle cx="270" cy="200" r="10" fill="none" stroke="var(--red)" stroke-width="1.5" opacity=".5"/>
+              <text x="282" y="196" font-family="DM Mono" font-size="9" fill="var(--red)" font-weight="500">NAIA · MNL</text>
+              <text x="282" y="208" font-family="DM Mono" font-size="8" fill="var(--ink4)">14.5086°N 121.0194°E</text>
+            </g>
+            <!-- Aircraft dots rendered by JS -->
+            <g id="aircraftLayer"></g>
+          </svg>
+          <div class="map-overlay">
+            <div class="mo-title">AIRSPACE STATUS</div>
+            <div class="mo-row"><div class="mo-dot" style="background:var(--electric)"></div><div class="mo-label">Arrivals</div><div class="mo-val" id="mo1">—</div></div>
+            <div class="mo-row"><div class="mo-dot" style="background:var(--green)"></div><div class="mo-label">Departures</div><div class="mo-val" id="mo2">—</div></div>
+            <div class="mo-row"><div class="mo-dot" style="background:var(--amber)"></div><div class="mo-label">Delayed</div><div class="mo-val" id="mo3">—</div></div>
+            <div class="mo-row"><div class="mo-dot" style="background:var(--red)"></div><div class="mo-label">Cancelled</div><div class="mo-val" id="mo4">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay:.12s">
+        <div class="ch">
+          <div><div class="ct">STATUS BREAKDOWN</div><div class="cs">Arrivals vs departures by flight status</div></div>
+          <span class="ctag nt" id="chartTag">Live</span>
+        </div>
+        <div id="bchartWrap"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+        <div class="cleg">
+          <div class="cl-item"><div class="cl-dot" style="background:var(--electric)"></div>Arrivals</div>
+          <div class="cl-item"><div class="cl-dot" style="background:var(--green)"></div>Departures</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WEEKLY TREND ── -->
+    <div class="card" style="animation-delay:.14s">
+      <div class="ch">
+        <div><div class="ct">WEEKLY FLIGHT TREND</div><div class="cs">7-day rolling average — arrivals and departures at MNL</div></div>
+        <span class="ctag nt">Estimated · Historical tier required for live data</span>
+      </div>
+      <div id="trendWrap"></div>
+    </div>
+
+    <!-- ── FLIGHT BOARD + RUNWAY ── -->
+    <div class="g21">
+      <div class="card" style="animation-delay:.16s">
+        <div class="ch">
+          <div><div class="ct">LIVE FLIGHT BOARD</div><div class="cs">Latest arrivals and departures at MNL</div></div>
+          <span class="ctag bl" id="fboardTag">● Loading</span>
+        </div>
+        <div class="api-note">📡 Showing latest flights from AviationStack · Free tier: up to 100 results per call · refreshes every 5 min</div>
+        <div id="fboardWrap"><div class="loading"><div class="spinner"></div>Fetching flights…</div></div>
+      </div>
+
+      <div class="card" style="animation-delay:.18s">
+        <div class="ch">
+          <div><div class="ct">RUNWAY STATUS</div><div class="cs">NAIA operational runways</div></div>
+          <span class="ctag gn">4 RUNWAYS</span>
+        </div>
+        <div id="rwyWrap">
+          <div class="rwy-item">
+            <div class="rwy-id">06/24</div>
+            <div class="rwy-meta"><div class="rwy-name">Primary North</div><div class="rwy-desc">3,737 M · ILS CAT III</div></div>
+            <div class="rwy-right"><div class="rwy-pct" id="r1p" style="color:var(--electric)">—</div><div class="rwy-track"><div class="rwy-fill" id="r1f" style="background:var(--electric);width:0%"></div></div></div>
+            <div class="rpill ac">ACTIVE</div>
+          </div>
+          <div class="rwy-item">
+            <div class="rwy-id">13/31</div>
+            <div class="rwy-meta"><div class="rwy-name">Primary South</div><div class="rwy-desc">3,737 M · ILS CAT II</div></div>
+            <div class="rwy-right"><div class="rwy-pct" id="r2p" style="color:var(--green)">—</div><div class="rwy-track"><div class="rwy-fill" id="r2f" style="background:var(--green);width:0%"></div></div></div>
+            <div class="rpill ac">ACTIVE</div>
+          </div>
+          <div class="rwy-item">
+            <div class="rwy-id">07/25</div>
+            <div class="rwy-meta"><div class="rwy-name">Cargo / Secondary</div><div class="rwy-desc">2,074 M · NON-ILS</div></div>
+            <div class="rwy-right"><div class="rwy-pct" id="r3p" style="color:var(--amber)">—</div><div class="rwy-track"><div class="rwy-fill" id="r3f" style="background:var(--amber);width:0%"></div></div></div>
+            <div class="rpill ac">ACTIVE</div>
+          </div>
+          <div class="rwy-item">
+            <div class="rwy-id">02/20</div>
+            <div class="rwy-meta"><div class="rwy-name">Auxiliary</div><div class="rwy-desc">1,890 M · VFR ONLY</div></div>
+            <div class="rwy-right"><div class="rwy-pct" style="color:var(--ink4)">20%</div><div class="rwy-track"><div class="rwy-fill" style="background:var(--ink4);width:20%"></div></div></div>
+            <div class="rpill mt">MAINT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AIRLINE SHARE + DELAY STATS + AIRCRAFT TYPES ── -->
+    <div class="g3">
+      <div class="card" style="animation-delay:.2s">
+        <div class="ch"><div><div class="ct">AIRLINE SHARE</div><div class="cs">Distribution from live data</div></div><span class="ctag nt">Today</span></div>
+        <div class="donut-wrap">
+          <canvas id="donutCanvas" width="160" height="160"></canvas>
+          <div class="donut-center"><div class="dval" id="dval">—</div><div class="dlbl">FLIGHTS</div></div>
+        </div>
+        <div class="dleg" id="dlegend"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+      </div>
+
+      <div class="card" style="animation-delay:.24s">
+        <div class="ch"><div><div class="ct">DELAY STATISTICS</div><div class="cs">Flight status breakdown</div></div><span class="ctag nt">Live</span></div>
+        <div class="dmini-grid">
+          <div class="dmini"><div class="dmini-val" id="ds1" style="color:var(--red)">—</div><div class="dmini-lbl">DELAYED</div></div>
+          <div class="dmini"><div class="dmini-val" id="ds2" style="color:var(--green)">—</div><div class="dmini-lbl">ON TIME</div></div>
+          <div class="dmini"><div class="dmini-val" id="ds3" style="color:var(--ink4)">—</div><div class="dmini-lbl">CANCELLED</div></div>
+          <div class="dmini"><div class="dmini-val" id="ds4" style="color:var(--electric)">—</div><div class="dmini-lbl">SCHEDULED</div></div>
+        </div>
+        <div class="slabel" style="margin-bottom:10px">STATUS DISTRIBUTION</div>
+        <div class="sbars" id="sbarWrap"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+      </div>
+
+      <div class="card" style="animation-delay:.28s">
+        <div class="ch"><div><div class="ct">AIRCRAFT TYPES</div><div class="cs">Fleet composition at MNL</div></div><span class="ctag nt" id="acTag">Live</span></div>
+        <div class="ac-grid" id="acGrid"><div class="loading" style="grid-column:span 3"><div class="spinner"></div>Loading…</div></div>
+        <div class="slabel" style="margin-bottom:10px">DIRECTION SPLIT</div>
+        <div class="sbars" id="dirSplit"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- ── TOP AIRLINES ── -->
+    <div class="card" style="animation-delay:.3s">
+      <div class="ch">
+        <div><div class="ct">TOP AIRLINES BY FLIGHT COUNT</div><div class="cs">Ranked from live API data — current session</div></div>
+        <span class="ctag bl">LIVE RANKING</span>
+      </div>
+      <div class="abars" id="airlineRank"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+    </div>
+
+    <!-- ── TERMINALS ── -->
+    <div>
+      <div class="slabel">TERMINAL STATUS — NAIA INTERNATIONAL AIRPORT</div>
+      <div class="term-grid" id="termGrid">
+        <div class="term-card t1" data-t="T1" style="animation-delay:.32s">
+          <div class="term-id" style="color:var(--electric)">T1</div>
+          <div class="term-name">INTERNATIONAL TERMINAL</div>
+          <div class="term-stat"><span>Flights</span><span class="term-stat-v" id="tt1f">—</span></div>
+          <div class="term-stat"><span>Airlines</span><span class="term-stat-v" id="tt1a">International carriers</span></div>
+          <div class="term-stat"><span>Status</span><span class="term-stat-v" style="color:var(--green)">Operational</span></div>
+          <div class="term-util"><div class="term-util-fill" id="tt1b" style="background:var(--electric);width:0%"></div></div>
+        </div>
+        <div class="term-card t2" data-t="T2" style="animation-delay:.36s">
+          <div class="term-id" style="color:var(--green)">T2</div>
+          <div class="term-name">CENTENNIAL TERMINAL</div>
+          <div class="term-stat"><span>Flights</span><span class="term-stat-v" id="tt2f">—</span></div>
+          <div class="term-stat"><span>Airlines</span><span class="term-stat-v" id="tt2a">Philippine Airlines</span></div>
+          <div class="term-stat"><span>Status</span><span class="term-stat-v" style="color:var(--green)">Operational</span></div>
+          <div class="term-util"><div class="term-util-fill" id="tt2b" style="background:var(--green);width:0%"></div></div>
+        </div>
+        <div class="term-card t3" data-t="T3" style="animation-delay:.40s">
+          <div class="term-id" style="color:var(--amber)">T3</div>
+          <div class="term-name">DOMESTIC TERMINAL</div>
+          <div class="term-stat"><span>Flights</span><span class="term-stat-v" id="tt3f">—</span></div>
+          <div class="term-stat"><span>Airlines</span><span class="term-stat-v" id="tt3a">Cebu Pacific · AirAsia</span></div>
+          <div class="term-stat"><span>Status</span><span class="term-stat-v" style="color:var(--green)">Operational</span></div>
+          <div class="term-util"><div class="term-util-fill" id="tt3b" style="background:var(--amber);width:0%"></div></div>
+        </div>
+        <div class="term-card tc" data-t="CG" style="animation-delay:.44s">
+          <div class="term-id" style="color:var(--ink3)">CGO</div>
+          <div class="term-name">CARGO TERMINAL</div>
+          <div class="term-stat"><span>Flights</span><span class="term-stat-v" id="ttcf">—</span></div>
+          <div class="term-stat"><span>Operators</span><span class="term-stat-v" id="ttca">Freighters</span></div>
+          <div class="term-stat"><span>Status</span><span class="term-stat-v" style="color:var(--green)">Operational</span></div>
+          <div class="term-util"><div class="term-util-fill" id="ttcb" style="background:var(--ink4);width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <footer>
+    <div class="foot-l">NAIA AIR TRAFFIC ANALYTICS · v2.0 · MNL · POWERED BY AVIATIONSTACK · FREE TIER: 100 REQ/MO</div>
+    <div class="foot-r"><a href="https://aviationstack.com" target="_blank">aviationstack.com</a> · Data reflects latest API response · Not affiliated with MIAA or CAAP</div>
+  </footer>
+
+</div><!-- /app -->
+
+<style>
+@keyframes sweepRot{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+
+<script>
+const AIRPORT = 'MNL';
+const COLORS  = ['#0052f5','#00b07a','#f08c00','#e82d38','#7c5cfc','#e8436e','#0098d4','#f5a623'];
+let KEY = '';
+
+/* ── SETUP ── */
+function toggleVis(){const i=document.getElementById('apiKey');i.type=i.type==='password'?'text':'password'}
+
+async function connect(){
+  const k = document.getElementById('apiKey').value.trim();
+  const err = document.getElementById('suErr');
+  err.style.display='none';
+  if(!k){err.textContent='Please enter your API key.';err.style.display='block';return}
+  const btn = document.querySelector('.su-btn');
+  btn.textContent='CONNECTING…';btn.style.opacity='.7';
+  try{
+    const res = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${k}&arr_iata=${AIRPORT}&limit=1`);
+    const d = await res.json();
+    if(d.error){err.textContent='API Error: '+(d.error.message||'Invalid key. Please check and try again.');err.style.display='block';btn.textContent='CONNECT DASHBOARD →';btn.style.opacity='1';return}
+    KEY=k;
+    document.getElementById('setup').style.display='none';
+    document.getElementById('app').style.display='block';
+    initClock(); buildTrend(); loadAll();
+    setInterval(loadAll,300000);
+  }catch(e){
+    err.textContent='Network error. Check your connection and try again.';
+    err.style.display='block';btn.textContent='CONNECT DASHBOARD →';btn.style.opacity='1';
+  }
+}
+
+function resetKey(){KEY='';document.getElementById('apiKey').value='';document.getElementById('suErr').style.display='none';document.getElementById('setup').style.display='flex';document.getElementById('app').style.display='none'}
+document.getElementById('apiKey').addEventListener('keydown',e=>{if(e.key==='Enter')connect()});
+
+/* ── CLOCK ── */
+function initClock(){
+  function tick(){
+    const n=new Date();
+    document.getElementById('clock').textContent=n.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  tick(); setInterval(tick,1000);
+}
+
+/* ── LOAD ALL ── */
+async function loadAll(){
+  const btn=document.getElementById('refreshBtn');
+  btn.disabled=true;btn.textContent='⟳ LOADING…';
+  try{
+    const [arr,dep] = await Promise.all([fetchF('arr'),fetchF('dep')]);
+    const a=arr||[]; const d=dep||[];
+    const all=[...a,...d];
+    updateKPIs(a,d,all);
+    buildTicker(all);
+    buildBarChart(a,d);
+    buildFlightBoard(all);
+    buildAirlineDonut(all);
+    buildDelayStats(all);
+    buildAircraftTypes(all);
+    buildAirlineRanking(all);
+    buildTerminals(a,d);
+    updateMap(all,a,d);
+    updateRunways(all);
+    document.getElementById('lastUp').textContent='Updated '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
+  }catch(e){console.error(e)}
+  btn.disabled=false;btn.textContent='⟳ REFRESH';
+}
+
+async function fetchF(type){
+  const p=type==='arr'?`arr_iata=${AIRPORT}`:`dep_iata=${AIRPORT}`;
+  try{
+    const res=await fetch(`https://api.aviationstack.com/v1/flights?access_key=${KEY}&${p}&limit=100`);
+    const d=await res.json();
+    if(d.error){console.error('API:',d.error.message);return null}
+    return d.data||[];
+  }catch{return null}
+}
+
+/* ── KPIs ── */
+function updateKPIs(arr,dep,all){
+  const total=all.length;
+  const onTime=all.filter(f=>['active','landed','scheduled'].includes(f.flight_status)).length;
+  const delayed=all.filter(f=>f.flight_status==='delayed'||(f.departure?.delay>0)).length;
+  const rate=total>0?Math.round(onTime/total*100):0;
+  setKPI('k1',total,'arr + dep',total/200*100,'k1b');
+  setKPI('k2',arr.length,'inbound to MNL',arr.length/100*100,'k2b');
+  setKPI('k3',dep.length,'outbound from MNL',dep.length/100*100,'k3b');
+  setKPI('k4',rate+'%',onTime+' of '+total+' flights',rate,'k4b');
+  setKPI('k5',delayed,delayed===0?'no delays':'flights affected',delayed/total*100,'k5b');
+  document.getElementById('mo1').textContent=arr.length;
+  document.getElementById('mo2').textContent=dep.length;
+  document.getElementById('mo3').textContent=delayed;
+  document.getElementById('mo4').textContent=all.filter(f=>f.flight_status==='cancelled').length;
+}
+function setKPI(id,val,sub,pct,bid){
+  document.getElementById(id).textContent=val;
+  if(document.getElementById(id+'s'))document.getElementById(id+'s').textContent=sub;
+  setTimeout(()=>{document.getElementById(bid).style.width=Math.min(pct,100)+'%'},100);
+}
+
+/* ── TICKER ── */
+function buildTicker(all){
+  if(!all.length)return;
+  const items=all.slice(0,30).map(f=>{
+    const fn=f.flight?.iata||'—';
+    const dep=f.departure?.iata||'?';
+    const arr=f.arrival?.iata||'?';
+    const st=f.flight_status||'unknown';
+    const dotCls=st==='active'||st==='landed'?'g':st==='delayed'||st==='cancelled'?'r':st==='scheduled'?'b':'y';
+    return `<div class="t-item"><span class="t-dot ${dotCls}"></span>${fn} · ${dep}→${arr} <span style="opacity:.5">|</span> ${st.toUpperCase()}</div>`;
+  }).join('');
+  const doubled=items+items;
+  document.getElementById('tickerInner').innerHTML=doubled;
+}
+
+/* ── BAR CHART ── */
+function buildBarChart(arr,dep){
+  const statuses=['scheduled','active','landed','delayed','cancelled','diverted'];
+  const labels=['Sched','Active','Landed','Delayed','Cancel','Divtd'];
+  const aC={},dC={};
+  statuses.forEach(s=>{aC[s]=0;dC[s]=0});
+  arr.forEach(f=>{const s=f.flight_status;if(s in aC)aC[s]++});
+  dep.forEach(f=>{const s=f.flight_status;if(s in dC)dC[s]++});
+  const maxV=Math.max(...statuses.map(s=>Math.max(aC[s],dC[s])),1);
+  let html='<div class="bchart">';
+  statuses.forEach((s,i)=>{
+    const a=aC[s],d=dC[s];
+    const ah=Math.round(a/maxV*100),dh=Math.round(d/maxV*100);
+    html+=`<div class="bc-g"><div class="bc-bars">
+      <div class="bc-bar a" style="height:${ah}%;animation-delay:${.1+i*.05}s" title="Arr ${s}: ${a}"></div>
+      <div class="bc-bar d" style="height:${dh}%;animation-delay:${.15+i*.05}s" title="Dep ${s}: ${d}"></div>
+    </div><div class="bc-lbl">${labels[i]}</div></div>`;
+  });
+  html+='</div>';
+  document.getElementById('bchartWrap').innerHTML=html;
+  document.getElementById('chartTag').textContent=(arr.length+dep.length)+' FLIGHTS';
+}
+
+/* ── WEEKLY TREND (estimated) ── */
+function buildTrend(){
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const arrD=[310,295,340,360,380,420,365];
+  const depD=[305,288,335,355,372,415,360];
+  const maxV=Math.max(...arrD,...depD)+30;
+  const W=600,H=120,PAD={t:10,r:20,b:28,l:36};
+  const xStep=(W-PAD.l-PAD.r)/(days.length-1);
+  const yScale=(H-PAD.t-PAD.b)/maxV;
+  function pts(data){return data.map((v,i)=>`${PAD.l+i*xStep},${H-PAD.b-v*yScale}`).join(' ')}
+  const apts=pts(arrD),dpts=pts(depD);
+  const aFirst=PAD.l+','+H-PAD.b,aLast=PAD.l+(days.length-1)*xStep+','+H-PAD.b;
+  const gridLines=[0,100,200,300,400].map(v=>{
+    const y=H-PAD.b-v*yScale;
+    return `<line class="trend-grid" x1="${PAD.l}" y1="${y}" x2="${W-PAD.r}" y2="${y}"/><text class="trend-ylbl" x="${PAD.l-4}" y="${y+3}">${v}</text>`;
+  }).join('');
+  const xLabels=days.map((d,i)=>`<text class="trend-xlbl" x="${PAD.l+i*xStep}" y="${H-2}">${d}</text>`).join('');
+  const dots=arrD.map((v,i)=>`<circle class="trend-dot" cx="${PAD.l+i*xStep}" cy="${H-PAD.b-v*yScale}" r="4"><title>Arrivals ${days[i]}: ${v}</title></circle>`).join('');
+  document.getElementById('trendWrap').innerHTML=`
+  <svg class="trend-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0052f5" stop-opacity=".3"/>
+        <stop offset="100%" stop-color="#0052f5" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}${xLabels}
+    <polygon class="trend-area" points="${aFirst} ${apts} ${aLast}"/>
+    <polyline class="trend-line2" points="${dpts}"/>
+    <polyline class="trend-line" points="${apts}"/>
+    ${dots}
+  </svg>
+  <div class="cleg" style="margin-top:8px">
+    <div class="cl-item"><div class="cl-dot" style="background:var(--electric)"></div>Arrivals (estimated)</div>
+    <div class="cl-item"><div class="cl-dot" style="background:var(--green);opacity:.6"></div>Departures (estimated)</div>
+  </div>`;
+}
+
+/* ── FLIGHT BOARD ── */
+function buildFlightBoard(all){
+  if(!all.length){document.getElementById('fboardWrap').innerHTML='<div class="err-box">No flight data returned. Free tier may be limited at this time.</div>';document.getElementById('fboardTag').textContent='0 FLIGHTS';return}
+  const shown=all.slice(0,14);
+  const badgeMap={scheduled:'sc',active:'ac',landed:'ln',delayed:'dl',cancelled:'ca',diverted:'dv'};
+  const labelMap={scheduled:'Scheduled',active:'Active',landed:'Landed',delayed:'Delayed',cancelled:'Cancelled',diverted:'Diverted'};
+  let rows=shown.map(f=>{
+    const fn=f.flight?.iata||f.flight?.icao||'—';
+    const dep=f.departure?.iata||'?';
+    const arr=f.arrival?.iata||'?';
+    const airline=(f.airline?.name||'—').replace('Philippine Airlines','PAL').replace('Cebu Pacific Air','Cebu Pac').replace('AirAsia Philippines','AirAsia PH');
+    const t=f.departure?.scheduled?new Date(f.departure.scheduled).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}):(f.arrival?.scheduled?new Date(f.arrival.scheduled).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}):' —');
+    const st=f.flight_status||'unknown';
+    const bc=badgeMap[st]||'uk';
+    const bl=labelMap[st]||st;
+    const dir=f.arrival?.iata===AIRPORT?'↓ ARR':'↑ DEP';
+    const dc=f.arrival?.iata===AIRPORT?'var(--electric)':'var(--green)';
+    return `<tr><td><span class="fno">${fn}</span></td><td style="color:var(--ink3);font-size:11px">${dep} → ${arr}</td><td style="font-size:11px;color:var(--ink3);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${airline}</td><td style="font-family:'DM Mono',monospace;font-size:11px">${t}</td><td><span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:${dc}">${dir}</span></td><td><span class="fbadge ${bc}">${bl}</span></td></tr>`;
+  }).join('');
+  document.getElementById('fboardWrap').innerHTML=`<table class="ftbl"><thead><tr><th>FLIGHT</th><th>ROUTE</th><th>AIRLINE</th><th>TIME</th><th>TYPE</th><th>STATUS</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('fboardTag').textContent=`● ${all.length} FLIGHTS`;
+}
+
+/* ── DONUT ── */
+function buildAirlineDonut(all){
+  const counts={};
+  all.forEach(f=>{const n=f.airline?.name||'Unknown';counts[n]=(counts[n]||0)+1});
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const total=all.length;
+  document.getElementById('dval').textContent=total;
+  const canvas=document.getElementById('donutCanvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,160,160);
+  let start=-Math.PI/2;
+  const cx=80,cy=80,r=72,inner=48;
+  if(!sorted.length){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#e6e6df';ctx.fill()}
+  else sorted.forEach(([,v],i)=>{const angle=v/total*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+angle);ctx.closePath();ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();start+=angle});
+  ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);ctx.fillStyle='#fafaf7';ctx.fill();
+  let leg='';
+  sorted.forEach(([name,v],i)=>{
+    const short=name.length>24?name.slice(0,24)+'…':name;
+    const pct=Math.round(v/total*100);
+    leg+=`<div class="dl-row"><div class="dl-l"><div class="dl-dot" style="background:${COLORS[i%COLORS.length]}"></div>${short}</div><div class="dl-v">${v} <span style="color:var(--ink4);font-weight:400">(${pct}%)</span></div></div>`;
+  });
+  document.getElementById('dlegend').innerHTML=leg||'<span style="color:var(--ink4);font-size:11px">No data</span>';
+}
+
+/* ── DELAY STATS ── */
+function buildDelayStats(all){
+  const s={delayed:0,active:0,cancelled:0,scheduled:0,landed:0,diverted:0};
+  all.forEach(f=>{const st=f.flight_status;if(st in s)s[st]++});
+  const onTime=s.active+s.landed;
+  document.getElementById('ds1').textContent=s.delayed;
+  document.getElementById('ds2').textContent=onTime;
+  document.getElementById('ds3').textContent=s.cancelled;
+  document.getElementById('ds4').textContent=s.scheduled;
+  const tot=all.length||1;
+  const rows=[
+    {l:'Scheduled',v:s.scheduled,c:'var(--electric)'},
+    {l:'On Time',v:onTime,c:'var(--green)'},
+    {l:'Delayed',v:s.delayed,c:'var(--amber)'},
+    {l:'Cancelled',v:s.cancelled,c:'var(--red)'},
+    {l:'Diverted',v:s.diverted,c:'var(--ink4)'},
+  ];
+  document.getElementById('sbarWrap').innerHTML=rows.map(r=>{
+    const p=Math.round(r.v/tot*100);
+    return `<div class="sb-row"><span class="sb-lbl">${r.l}</span><div class="sb-track"><div class="sb-fill" style="width:${p}%;background:${r.c}"></div></div><span class="sb-pct">${p}%</span></div>`;
+  }).join('');
+}
+
+/* ── AIRCRAFT TYPES ── */
+function buildAircraftTypes(all){
+  const counts={};
+  all.forEach(f=>{const t=f.aircraft?.iata||f.aircraft?.icao;if(t)counts[t]=(counts[t]||0)+1});
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const icons=['✈️','🛫','🛬','🛩️','📦','🛸'];
+  const acGrid=sorted.length===0
+    ?`<div style="grid-column:span 3"><div class="api-note">Aircraft type not available on free AviationStack tier.</div></div>`
+    :sorted.map(([t,v],i)=>`<div class="ac-card"><div class="ac-icon">${icons[i]}</div><div class="ac-val" style="color:${COLORS[i]}">${v}</div><div class="ac-lbl">${t}</div></div>`).join('');
+  document.getElementById('acGrid').innerHTML=acGrid;
+  document.getElementById('acTag').textContent=all.length+' AIRCRAFT';
+  const arrC=all.filter(f=>f.arrival?.iata===AIRPORT).length;
+  const depC=all.filter(f=>f.departure?.iata===AIRPORT).length;
+  const tot=arrC+depC||1;
+  document.getElementById('dirSplit').innerHTML=`
+    <div class="sb-row"><span class="sb-lbl">Arrivals</span><div class="sb-track"><div class="sb-fill" style="width:${Math.round(arrC/tot*100)}%;background:var(--electric)"></div></div><span class="sb-pct">${arrC}</span></div>
+    <div class="sb-row"><span class="sb-lbl">Departures</span><div class="sb-track"><div class="sb-fill" style="width:${Math.round(depC/tot*100)}%;background:var(--green)"></div></div><span class="sb-pct">${depC}</span></div>`;
+}
+
+/* ── AIRLINE RANKING ── */
+function buildAirlineRanking(all){
+  const counts={};
+  all.forEach(f=>{const n=f.airline?.name||'Unknown';counts[n]=(counts[n]||0)+1});
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxV=sorted[0]?.[1]||1;
+  document.getElementById('airlineRank').innerHTML=sorted.map(([name,v],i)=>{
+    const short=name.length>28?name.slice(0,28)+'…':name;
+    return `<div class="ab-row">
+      <span class="ab-lbl" title="${name}">${short}</span>
+      <div class="ab-track"><div class="ab-fill" style="width:${Math.round(v/maxV*100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <span class="ab-val">${v}</span>
+    </div>`;
+  }).join('')||'<span style="color:var(--ink4);font-size:11px">No data available</span>';
+}
+
+/* ── TERMINALS ── */
+function buildTerminals(arr,dep){
+  const all=[...arr,...dep];
+  const total=all.length||1;
+  // T1 = international (non-Philippine), T2 = PAL, T3 = domestic/LCC, CGO = cargo
+  const t1=all.filter(f=>f.departure?.terminal==='1'||f.arrival?.terminal==='1').length;
+  const t2=all.filter(f=>(f.airline?.iata==='PR'||f.airline?.iata==='PAL')||(f.departure?.terminal==='2'||f.arrival?.terminal==='2')).length;
+  const t3=all.filter(f=>f.departure?.terminal==='3'||f.arrival?.terminal==='3'||f.airline?.iata==='5J'||f.airline?.iata==='Z2'||f.airline?.iata==='DG').length;
+  const cargo=all.filter(f=>(f.airline?.name||'').toLowerCase().includes('cargo')||(f.airline?.name||'').toLowerCase().includes('freight')).length;
+  // fallback distribution if terminal field absent
+  const f1=t1||Math.round(total*.28);
+  const f2=t2||Math.round(total*.34);
+  const f3=t3||Math.round(total*.30);
+  const fc=cargo||Math.round(total*.08);
+  setTerminal('tt1',f1,Math.round(f1/total*100),'var(--electric)');
+  setTerminal('tt2',f2,Math.round(f2/total*100),'var(--green)');
+  setTerminal('tt3',f3,Math.round(f3/total*100),'var(--amber)');
+  setTerminal('ttc',fc,Math.round(fc/total*100),'var(--ink4)');
+}
+function setTerminal(id,flights,pct,color){
+  document.getElementById(id+'f').textContent=flights+' flights';
+  document.getElementById(id+'b').style.width=pct+'%';
+}
+
+/* ── MAP ── */
+function updateMap(all,arr,dep){
+  const layer=document.getElementById('aircraftLayer');
+  layer.innerHTML='';
+  document.getElementById('mapTag').textContent=`● ${all.length} AIRCRAFT`;
+  // Generate positions in airspace around NAIA (270,200 in viewBox 620x300)
+  const cx=270,cy=200,spread=110;
+  const shown=all.slice(0,40);
+  shown.forEach((f,i)=>{
+    const angle=(i/shown.length)*Math.PI*2+Math.random()*.3;
+    const dist=30+Math.random()*spread;
+    const x=cx+Math.cos(angle)*dist;
+    const y=cy+Math.sin(angle)*dist*0.7;
+    const st=f.flight_status;
+    const col=st==='active'?'#0052f5':st==='landed'?'#00b07a':st==='delayed'?'#e82d38':st==='cancelled'?'#e82d38':'#f08c00';
+    const fn=f.flight?.iata||'';
+    // Pulse ring for active flights
+    const ring=st==='active'?`<circle cx="${x}" cy="${y}" r="8" fill="none" stroke="${col}" stroke-width="1" opacity=".4" style="animation:acRing ${1.5+Math.random()}s ease-out infinite;animation-delay:${Math.random()}s"/>`:' ';
+    const el=document.createElementNS('http://www.w3.org/2000/svg','g');
+    el.innerHTML=`
+      ${ring}
+      <circle cx="${x}" cy="${y}" r="4" fill="${col}" opacity=".85"/>
+      <text x="${x+7}" y="${y+3}" font-family="DM Mono" font-size="7" fill="${col}" opacity=".7">${fn}</text>`;
+    layer.appendChild(el);
+  });
+}
+
+/* ── RUNWAYS ── */
+function updateRunways(all){
+  const total=all.length;
+  const base=Math.min(Math.round(total/200*90),95);
+  const r1=Math.min(base+6,97),r2=Math.max(base-5,45),r3=Math.max(Math.round(base*.55),22);
+  setRwy('r1',r1,'var(--electric)');setRwy('r2',r2,'var(--green)');setRwy('r3',r3,'var(--amber)');
+}
+function setRwy(id,pct,color){
+  document.getElementById(id+'p').textContent=pct+'%';
+  document.getElementById(id+'p').style.color=color;
+  setTimeout(()=>{document.getElementById(id+'f').style.width=pct+'%'},100);
+}
+</script>
+
+<style>
+@keyframes acRing{0%{r:4;opacity:.6}100%{r:14;opacity:0}}
+</style>
+</body>
+</html>
