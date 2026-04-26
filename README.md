@@ -9,7 +9,7 @@
 
 🔗 **Live Dashboard:** [cloudrosemage.github.io/naia-air-traffic-dashboard](https://cloudrosemage.github.io/naia-air-traffic-dashboard)
 
-📄 **Project Documentation:** *(Add Notion link here)*
+📄 **Project Documentation:** (https://www.notion.so/Aviation-Analytics-Dashboard-Live-Air-Traffic-Data-Over-Ninoy-Aquino-International-Airport-NAIA-34dcec93c31b80879fd7e3b197fa0a1f?source=copy_link)
 
 👤 **Author:** John Miguel Co Molina · Remote Operations Support & Junior Data Analyst · [LinkedIn](https://linkedin.com/in/cloudrosemage
 
@@ -17,7 +17,8 @@
 
 ## 📸 Preview
 
-> *(Add screenshot here)*
+<img width="1919" height="910" alt="image" src="https://github.com/user-attachments/assets/e013d961-f9be-4690-88c8-2ae09428db96" />
+
 
 ---
 
