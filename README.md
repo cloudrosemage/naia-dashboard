@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-live-brightgreen)
 ![API](https://img.shields.io/badge/API-AviationStack-blue)
 ![Deployment](https://img.shields.io/badge/deployed-GitHub%20Pages-black)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)
 
 > A real-time, browser-based analytics dashboard that monitors live air traffic activity at **Ninoy Aquino International Airport (NAIA), Manila, Philippines** — built as a portfolio project to demonstrate data analytics, front-end web development, and REST API integration skills.
 
@@ -239,7 +239,9 @@ A small second `<style>` block at the very end declares keyframe animations for 
 
 ## 📄 License
 
-MIT License — free to use, modify, and distribute with attribution.
+This project is licensed under [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/). You are free to share and adapt this work for non-commercial purposes, provided you give appropriate credit to the original author. Commercial use requires explicit permission.
+
+© 2026 John Miguel Co Molina
 
 ---
 
